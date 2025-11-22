@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+**/dist/
+target/
+**/target/
+build/
+**/build/
+
+# Generated files
+*.min.js
+*.min.css
+*.bundle.js
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+Cargo.lock
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Rust
+**/*.rs
+
+# Expo
+.expo/
+.expo-shared/
+
+# Native
+ios/
+android/
+**/ios/
+**/android/
+

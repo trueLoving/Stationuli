@@ -1,0 +1,136 @@
+# ============================================
+# Stationuli Project - Git Ignore Rules
+# ============================================
+
+# ============================================
+# Rust / Cargo
+# ============================================
+# Cargo build artifacts
+/target/
+**/target/
+**/*.rs.bk
+Cargo.lock
+
+# ============================================
+# Node.js / npm / pnpm
+# ============================================
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+dist-ssr/
+**/dist/
+web-build/
+
+# Package manager lock files (keep pnpm-lock.yaml)
+# yarn.lock
+# package-lock.json
+
+# ============================================
+# TypeScript
+# ============================================
+*.tsbuildinfo
+expo-env.d.ts
+
+# ============================================
+# Expo / React Native
+# ============================================
+.expo/
+.expo-shared/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.metro-health-check*
+
+# Generated native folders
+/ios/
+/android/
+**/ios/
+**/android/
+
+# ============================================
+# Tauri
+# ============================================
+# Generated schema files
+/gen/schemas
+**/gen/schemas
+
+# ============================================
+# Logs
+# ============================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ============================================
+# Environment & Local Files
+# ============================================
+*.local
+.env
+.env*.local
+*.pem
+
+# ============================================
+# IDE & Editor
+# ============================================
+# VSCode
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# ============================================
+# OS Files
+# ============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ============================================
+# Project Specific
+# ============================================
+app-example

@@ -1,0 +1,2 @@
+# 运行 lint-staged 格式化代码
+pnpm exec lint-staged

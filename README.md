@@ -18,6 +18,7 @@ Stationuli 的诞生源于三个核心驱动力：
 ### 1. 项目经历积累 📚
 
 在之前的项目开发中，本人深入探索了不同设备在离线环境下的文件传输技术，特别是 **Android 到 PC 端的传输场景**。这段经历让本人深刻理解了：
+
 - 离线环境下设备发现的挑战（mDNS、蓝牙等）
 - 跨平台文件传输的技术难点
 - P2P直连的可靠性和性能优化
@@ -27,6 +28,7 @@ Stationuli 的诞生源于三个核心驱动力：
 ### 2. 个人真实需求 🏠
 
 作为开发者，本人迫切需要一套软件来**搭建完全属于自己的个人工作站**：
+
 - **设备打通**：将 PC、Mobile、iPad、Watch 等设备相互连接
 - **完全私有**：所有信息传输不经过任何第三方服务器
 - **离线优先**：支持完全离线环境下工作，保护隐私和数据安全
@@ -37,6 +39,7 @@ Stationuli 的诞生源于三个核心驱动力：
 ### 3. 技术探索精神 🔬
 
 Stationuli 也是本人**研究不同领域技术生态**的实践平台：
+
 - **Rust 生态**：探索 Rust 在系统编程、网络编程、加密等领域的应用
 - **跨平台开发**：研究 Tauri、React Native 等跨平台框架的优劣
 - **P2P 网络**：深入理解 QUIC、mDNS、NAT 穿透等网络技术
@@ -93,11 +96,11 @@ Stationuli 致力于帮助用户打造**完全自主、完全离线、完全私�
 
 #### 支持的传输组合
 
-| 发送端 | 接收端 | 支持状态 | 说明 |
-|--------|--------|----------|------|
-| PC ↔ PC | PC ↔ PC | ✅ | 支持Windows/macOS间互传，需两端安装软件 |
-| PC ↔ Android | PC ↔ Android | ✅ | 跨平台文件传输，需两端安装软件 |
-| Android ↔ Android | Android ↔ Android | ✅ | 移动端间互传，需两端安装软件 |
+| 发送端             | 接收端             | 支持状态 | 说明                                    |
+| ------------------ | ------------------ | -------- | --------------------------------------- |
+| PC ↔ PC           | PC ↔ PC           | ✅       | 支持Windows/macOS间互传，需两端安装软件 |
+| PC ↔ Android      | PC ↔ Android      | ✅       | 跨平台文件传输，需两端安装软件          |
+| Android ↔ Android | Android ↔ Android | ✅       | 移动端间互传，需两端安装软件            |
 
 > ⚠️ **重要提示**：所有文件传输功能均需**两端都安装原生软件**才能使用
 
@@ -121,6 +124,231 @@ Stationuli 致力于帮助用户打造**完全自主、完全离线、完全私�
 > ⚠️ **重要提示**：设备控制功能需要**两端都安装原生软件**才能使用
 
 ## 🛠️ 技术架构
+
+### 0. 项目目录结构建议
+
+**推荐的 Monorepo 目录结构**：
+
+```
+Stationuli/
+├── README.md                    # 项目主文档
+├── package.json                 # 根 package.json（monorepo 配置）
+├── pnpm-workspace.yaml          # pnpm workspace 配置
+├── .gitignore                   # Git 忽略文件
+├── .editorconfig                # 编辑器配置
+│
+├── apps/                        # 应用程序目录
+│   ├── desktop/                 # PC 端应用（Tauri）
+│   │   ├── package.json
+│   │   ├── vite.config.ts
+│   │   ├── tsconfig.json
+│   │   ├── index.html
+│   │   ├── src/                 # React 前端代码
+│   │   │   ├── main.tsx
+│   │   │   ├── App.tsx
+│   │   │   ├── components/      # 应用特定组件
+│   │   │   ├── hooks/           # 应用特定 hooks
+│   │   │   └── stores/          # 应用特定状态管理
+│   │   └── src-tauri/           # Tauri Rust 后端
+│   │       ├── Cargo.toml
+│   │       ├── tauri.conf.json
+│   │       ├── src/
+│   │       │   ├── main.rs
+│   │       │   └── lib.rs
+│   │       ├── capabilities/
+│   │       └── icons/
+│   │
+│   └── mobile/                  # 移动端应用（React Native + Expo）
+│       ├── package.json
+│       ├── app.json             # Expo 配置
+│       ├── tsconfig.json
+│       ├── app/                 # Expo Router 路由
+│       │   ├── _layout.tsx
+│       │   └── (tabs)/
+│       ├── src/                 # React Native 代码
+│       │   ├── components/      # 应用特定组件
+│       │   ├── hooks/           # 应用特定 hooks
+│       │   └── stores/          # 应用特定状态管理
+│       ├── native-modules/      # Native Modules（Android/iOS）
+│       │   └── stationuli-core/ # Stationuli Native Module
+│       │       ├── android/     # Android 原生代码
+│       │       │   ├── src/main/java/com/stationuli/
+│       │       │   │   ├── StationuliModule.kt
+│       │       │   │   └── StationuliPackage.kt
+│       │       │   ├── build.gradle
+│       │       │   └── CMakeLists.txt
+│       │       ├── ios/        # iOS 原生代码（未来扩展）
+│       │       └── package.json
+│       ├── expo-plugins/        # Expo Config Plugins
+│       │   └── with-stationuli-native.js
+│       └── assets/              # 静态资源
+│
+├── packages/                    # 共享包目录
+│   ├── core/                    # Rust 核心库（共享）
+│   │   ├── Cargo.toml
+│   │   ├── build.rs
+│   │   └── src/
+│   │       ├── lib.rs
+│   │       ├── p2p/             # P2P 协议栈
+│   │       │   ├── mod.rs
+│   │       │   ├── quic.rs      # QUIC 协议实现
+│   │       │   ├── tcp.rs       # TCP 协议实现
+│   │       │   └── mdns.rs      # mDNS 设备发现
+│   │       ├── crypto/        # 加密模块
+│   │       │   ├── mod.rs
+│   │       │   ├── key_exchange.rs  # X25519 密钥交换
+│   │       │   └── encryption.rs     # AES-256 加密
+│   │       ├── file/            # 文件管理
+│   │       │   ├── mod.rs
+│   │       │   ├── transfer.rs      # 文件传输
+│   │       │   ├── chunk.rs          # 文件分片
+│   │       │   └── resume.rs         # 断点续传
+│   │       └── ffi/             # FFI 接口（供 Native Module 使用）
+│   │           ├── mod.rs
+│   │           └── jni.rs       # JNI 绑定（Android）
+│   │
+│   ├── shared/                  # 共享的 TypeScript/JavaScript 代码
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   ├── src/
+│   │   │   ├── types/           # TypeScript 类型定义
+│   │   │   │   ├── device.ts
+│   │   │   │   ├── transfer.ts
+│   │   │   │   └── index.ts
+│   │   │   ├── components/      # 共享 React 组件
+│   │   │   │   ├── DeviceList/
+│   │   │   │   │   ├── DeviceList.tsx
+│   │   │   │   │   └── DeviceItem.tsx
+│   │   │   │   ├── TransferProgress/
+│   │   │   │   │   └── TransferProgress.tsx
+│   │   │   │   └── index.ts
+│   │   │   ├── hooks/           # 共享 React Hooks
+│   │   │   │   ├── useDeviceDiscovery.ts
+│   │   │   │   ├── useFileTransfer.ts
+│   │   │   │   └── index.ts
+│   │   │   ├── stores/          # 共享状态管理（Zustand）
+│   │   │   │   ├── deviceStore.ts
+│   │   │   │   ├── transferStore.ts
+│   │   │   │   └── index.ts
+│   │   │   ├── utils/           # 工具函数
+│   │   │   │   ├── format.ts
+│   │   │   │   ├── validation.ts
+│   │   │   │   └── index.ts
+│   │   │   └── constants/        # 常量定义
+│   │   │       ├── config.ts
+│   │   │       └── index.ts
+│   │   └── dist/                # 编译输出
+│   │
+│   └── ui/                      # 共享 UI 组件库（可选）
+│       ├── package.json
+│       ├── src/
+│       │   ├── components/      # 基础 UI 组件
+│       │   │   ├── Button/
+│       │   │   ├── Input/
+│       │   │   └── Card/
+│       │   └── theme/           # 主题配置
+│       └── dist/
+│
+├── tools/                       # 工具脚本
+│   ├── scripts/                 # 构建和开发脚本
+│   │   ├── build-rust.sh        # Rust 库构建脚本
+│   │   ├── setup-android-ndk.sh # Android NDK 设置
+│   │   └── generate-icons.sh    # 图标生成脚本
+│   └── configs/                 # 配置文件模板
+│       ├── eslint.config.js
+│       ├── prettier.config.js
+│       └── tsconfig.base.json
+│
+├── docs/                        # 文档目录
+│   ├── architecture/            # 架构文档
+│   ├── api/                     # API 文档
+│   └── guides/                  # 开发指南
+│
+└── .github/                     # GitHub 配置（可选）
+    ├── workflows/               # CI/CD 工作流
+    │   ├── build-desktop.yml
+    │   └── build-mobile.yml
+    └── ISSUE_TEMPLATE/
+```
+
+**目录结构说明**：
+
+1. **`apps/`** - 应用程序目录
+   - `desktop/` - PC 端 Tauri 应用
+   - `mobile/` - 移动端 React Native + Expo 应用
+
+2. **`packages/`** - 共享包目录
+   - `core/` - Rust 核心库（P2P、加密、文件管理等）
+   - `shared/` - 共享的 TypeScript/JavaScript 代码（组件、hooks、状态管理等）
+   - `ui/` - 共享 UI 组件库（可选，用于统一设计系统）
+
+3. **`tools/`** - 工具和脚本
+   - 构建脚本、配置文件模板等
+
+4. **`docs/`** - 文档目录
+   - 架构文档、API 文档、开发指南等
+
+**关键设计原则**：
+
+✅ **代码复用最大化**
+
+- 共享 UI 组件：`packages/shared/src/components/`
+- 共享业务逻辑：`packages/shared/src/hooks/`
+- 共享状态管理：`packages/shared/src/stores/`
+- 共享类型定义：`packages/shared/src/types/`
+
+✅ **核心逻辑统一**
+
+- Rust 核心库：`packages/core/`（PC 端直接使用，移动端通过 FFI 调用）
+
+✅ **平台特定代码隔离**
+
+- PC 端特定代码：`apps/desktop/src/`
+- 移动端特定代码：`apps/mobile/src/`
+- Native Modules：`apps/mobile/native-modules/`
+
+✅ **清晰的依赖关系**
+
+```
+apps/desktop  ──┐
+                ├──> packages/shared (共享 React 代码)
+apps/mobile   ──┘
+                │
+apps/desktop/src-tauri ──┐
+                         ├──> packages/core (Rust 核心库)
+apps/mobile/native-modules ──┘
+```
+
+**pnpm workspace 配置**：
+
+```yaml
+# pnpm-workspace.yaml
+packages:
+  - "apps/*"
+  - "packages/*"
+```
+
+**使用方式**：
+
+```json
+// apps/desktop/package.json
+{
+  "dependencies": {
+    "@stationuli/shared": "workspace:*"
+  }
+}
+
+// apps/mobile/package.json
+{
+  "dependencies": {
+    "@stationuli/shared": "workspace:*"
+  }
+}
+
+// apps/desktop/src-tauri/Cargo.toml
+[dependencies]
+stationuli-core = { path = "../../../packages/core" }
+```
 
 ### 1. 分层设计
 
@@ -163,51 +391,53 @@ Stationuli 致力于帮助用户打造**完全自主、完全离线、完全私�
 
 #### 2.1 前端技术栈
 
-| 平台 | UI框架 | 构建工具 | 状态管理 | 说明 |
-|------|--------|----------|----------|------|
-| **PC端** | Tauri 2.0 | Vite | Zustand | 使用WebView渲染，Rust后端 |
-| **Android端** | **方案A：Jetpack Compose** | Gradle | ViewModel + StateFlow | **Kotlin语言**，Material Design 3，完全原生 |
-| **Android端** | **方案B：React Native + Expo** | Metro + EAS Build | Zustand/Jotai | TypeScript/JavaScript，跨平台UI，通过Native Modules调用Rust核心 |
+| 平台          | UI框架                         | 构建工具          | 状态管理              | 说明                                                            |
+| ------------- | ------------------------------ | ----------------- | --------------------- | --------------------------------------------------------------- |
+| **PC端**      | Tauri 2.0                      | Vite              | Zustand               | 使用WebView渲染，Rust后端                                       |
+| **Android端** | **方案A：Jetpack Compose**     | Gradle            | ViewModel + StateFlow | **Kotlin语言**，Material Design 3，完全原生                     |
+| **Android端** | **方案B：React Native + Expo** | Metro + EAS Build | Zustand/Jotai         | TypeScript/JavaScript，跨平台UI，通过Native Modules调用Rust核心 |
 
 > 💡 **移动端技术栈选择建议**：
+>
 > - **方案A（Jetpack Compose）**：使用**Kotlin**语言，完全原生，性能最优，适合追求极致性能的场景
 > - **方案B（React Native + Expo）**：使用**TypeScript/JavaScript**，跨平台UI，代码复用率高，适合快速开发和未来扩展iOS
 
 > ⚠️ **重要考虑：技术栈一致性**
-> 
+>
 > **当前架构**：PC端使用 **Tauri（Rust + React）**
-> 
+>
 > - **方案A（Kotlin + Compose）**：
 >   - ❌ **技术栈不一致**：PC端是React生态，Android端是Kotlin生态
 >   - ❌ **代码无法复用**：UI组件、业务逻辑需要维护两套代码
 >   - ❌ **维护成本高**：需要熟悉React和Kotlin两套技术栈
 >   - ✅ **性能最优**：完全原生，性能最佳
-> 
 > - **方案B（React Native + Expo）**：
 >   - ✅ **技术栈统一**：PC端和Android端都使用React生态
 >   - ✅ **代码高度复用**：UI组件、状态管理、业务逻辑可共享
 >   - ✅ **维护成本低**：只需维护一套React代码
 >   - ✅ **开发效率高**：一次开发，多端使用
 >   - ⚠️ **性能略低**：通过Native Module调用Rust核心，性能影响很小
-> 
+>
 > **推荐**：考虑到PC端已使用Tauri（React），**强烈推荐方案B（React Native + Expo）**，以实现技术栈统一和代码复用。
 
 > 📝 **语言说明**：
+>
 > - **Jetpack Compose**：主要使用 **Kotlin**（不是Java）。虽然Android也支持Java，但Compose是Kotlin-first框架，现代Android开发推荐使用Kotlin
 > - **React Native**：使用 **TypeScript/JavaScript**，Native Modules部分使用Kotlin/Java
 
 #### 2.2 传输协议栈
 
-| 场景 | 协议选择 | 技术实现 | 说明 |
-|------|----------|----------|------|
-| **PC ↔ PC** | QUIC / TCP直连 | quinn (Rust) | 局域网优先，NAT穿透备用 |
-| **PC ↔ Android** | QUIC / TCP直连 | quinn (Rust) / OkHttp (Android) | 跨平台统一协议 |
-| **Android ↔ Android** | QUIC / TCP直连 | OkHttp (Android) | 移动端间传输 |
-| **设备发现** | mDNS | libmdns (Rust) / Android NSD | 局域网自动发现 |
+| 场景                   | 协议选择       | 技术实现                        | 说明                    |
+| ---------------------- | -------------- | ------------------------------- | ----------------------- |
+| **PC ↔ PC**           | QUIC / TCP直连 | quinn (Rust)                    | 局域网优先，NAT穿透备用 |
+| **PC ↔ Android**      | QUIC / TCP直连 | quinn (Rust) / OkHttp (Android) | 跨平台统一协议          |
+| **Android ↔ Android** | QUIC / TCP直连 | OkHttp (Android)                | 移动端间传输            |
+| **设备发现**           | mDNS           | libmdns (Rust) / Android NSD    | 局域网自动发现          |
 
 #### 2.3 核心库推荐
 
 **Rust核心库（共享）**
+
 - `tokio` - 异步运行时
 - `quinn` - QUIC协议实现
 - `ring` - 加密算法库
@@ -216,12 +446,14 @@ Stationuli 致力于帮助用户打造**完全自主、完全离线、完全私�
 - `stun` - STUN协议（NAT穿透）
 
 **Android端（方案A：原生）**
+
 - `OkHttp` - HTTP/QUIC客户端
 - `Conscrypt` - 加密库
 - `Room` - 本地数据库（传输历史）
 - `Android NSD` - 网络服务发现
 
 **Android端（方案B：React Native + Expo）**
+
 - `react-native` - React Native核心
 - `expo` - Expo SDK（开发工具链）
 - `@react-native-async-storage/async-storage` - 本地存储
@@ -233,6 +465,7 @@ Stationuli 致力于帮助用户打造**完全自主、完全离线、完全私�
   - `react-native-mdns`（自定义模块，封装mDNS发现）
 
 **PC端（Tauri）**
+
 - **核心库**：直接使用Rust核心库（无需FFI，Tauri本身就是Rust）
 - **文件系统**：`tauri-plugin-fs` - 文件系统访问
 - **系统通知**：`tauri-plugin-notification` - 系统通知
@@ -245,14 +478,15 @@ Stationuli 致力于帮助用户打造**完全自主、完全离线、完全私�
 
 #### 2.4 控制功能技术栈
 
-| 功能 | PC端 | Android端 | 说明 |
-|------|------|-----------|------|
-| **屏幕捕获** | Windows: DXGI / macOS: AVFoundation | - | 原生API实现 |
-| **输入模拟** | Windows: SendInput / macOS: CGEvent | Android InputManager | 需要系统权限 |
-| **剪贴板同步** | Windows: Clipboard API / macOS: NSPasteboard | Android ClipboardManager | 系统API |
-| **网络传输** | Rust核心库 (QUIC) | OkHttp (QUIC) | 低延迟传输 |
+| 功能           | PC端                                         | Android端                | 说明         |
+| -------------- | -------------------------------------------- | ------------------------ | ------------ |
+| **屏幕捕获**   | Windows: DXGI / macOS: AVFoundation          | -                        | 原生API实现  |
+| **输入模拟**   | Windows: SendInput / macOS: CGEvent          | Android InputManager     | 需要系统权限 |
+| **剪贴板同步** | Windows: Clipboard API / macOS: NSPasteboard | Android ClipboardManager | 系统API      |
+| **网络传输**   | Rust核心库 (QUIC)                            | OkHttp (QUIC)            | 低延迟传输   |
 
 > 💡 **技术选型说明**：
+>
 > - **统一协议**：使用QUIC/TCP作为跨平台协议，原生端直接实现
 > - **核心共享**：Rust核心库通过FFI供各平台调用，保证一致性
 > - **原生优势**：充分利用系统能力，性能最优，功能完整
@@ -260,28 +494,125 @@ Stationuli 致力于帮助用户打造**完全自主、完全离线、完全私�
 #### 2.5 技术栈选择理由
 
 **为什么选择QUIC而非WebRTC？**
+
 - ✅ 原生端无需浏览器限制，可直接使用最优协议
 - ✅ QUIC性能更优，连接建立更快
 - ✅ 内置多路复用和拥塞控制
 - ✅ 更适合文件传输场景
 
 **为什么选择Rust作为核心？**
+
 - ✅ 性能优异，适合P2P网络处理
 - ✅ 内存安全，减少安全漏洞
 - ✅ 跨平台编译，一套代码多端使用
 - ✅ 丰富的异步生态（tokio）
 
 **为什么选择Tauri而非Electron？**
+
 - ✅ 体积更小（~10MB vs ~100MB）
 - ✅ 性能更好（系统WebView vs Chromium）
 - ✅ 安全性更高（Rust后端）
 - ✅ 资源占用更低
+
+**Tauri 版本选择：1.0 vs 2.0**
+
+> 📅 **更新时间**：Tauri 2.0 于 2024 年 10 月 2 日发布
+
+**Tauri 2.0 的主要优势**：
+
+1. **移动平台支持** ✅
+   - 支持 iOS 和 Android 开发
+   - 虽然本项目 Android 端使用 React Native，但未来扩展 iOS 时可用 Tauri
+   - 一套代码多端运行（桌面 + 移动）
+
+2. **插件系统增强** ✅
+   - 更强大的插件系统
+   - 支持 Swift（iOS）和 Kotlin（Android）编写平台特定代码
+   - 更深入的系统集成能力
+
+3. **安全性提升** ✅
+   - 全面的安全审计
+   - 改进的权限系统
+   - 更好的安全实践
+
+4. **API 改进** ✅
+   - 更清晰的 API 设计
+   - 更好的 TypeScript 类型支持
+   - 改进的错误处理
+
+**Tauri 1.0 的优势**：
+
+1. **成熟稳定** ✅
+   - 发布已久，生态成熟
+   - 文档完善，社区资源丰富
+   - 第三方插件更多
+
+2. **迁移成本低** ✅
+   - 无需学习新 API
+   - 现有项目可直接使用
+   - 兼容性好
+
+**针对本项目的建议**：
+
+✅ **推荐使用 Tauri 2.0**，原因如下：
+
+1. **项目处于初期阶段** 🚀
+   - 项目刚开始，没有历史包袱
+   - 直接使用最新版本，避免未来升级成本
+   - 2.0 的 API 设计更合理，长期维护成本更低
+
+2. **功能需求匹配** 🎯
+   - 本项目需要深度系统集成（屏幕捕获、输入模拟等）
+   - Tauri 2.0 的插件系统更适合复杂功能
+   - 更好的权限管理，适合需要系统权限的场景
+
+3. **未来扩展性** 🔮
+   - 虽然目前 Android 端使用 React Native，但未来可能考虑 iOS
+   - Tauri 2.0 的移动端支持为未来提供更多选择
+   - 如果未来需要统一技术栈，Tauri 2.0 是更好的选择
+
+4. **安全性要求** 🔐
+   - 本项目强调完全私有、端到端加密
+   - Tauri 2.0 的安全审计和权限系统更适合安全敏感应用
+
+5. **长期维护** 📈
+   - Tauri 1.0 将逐步进入维护模式
+   - 使用 2.0 可以持续获得新功能和 bug 修复
+   - 社区和官方支持将更多集中在 2.0
+
+**注意事项**：
+
+⚠️ **迁移考虑**：
+
+- 如果已有 Tauri 1.0 项目，需要参考[官方迁移指南](https://v2.tauri.app/zh-cn/start/migrate/)
+- 新项目直接使用 2.0，无需迁移
+
+⚠️ **插件兼容性**：
+
+- 部分第三方插件可能尚未支持 2.0
+- 本项目主要使用官方插件（`tauri-plugin-fs`、`tauri-plugin-notification` 等），均已支持 2.0
+
+⚠️ **文档资源**：
+
+- Tauri 2.0 文档已完善
+- 社区资源相对较少，但官方文档足够详细
+
+**结论**：
+
+对于 **Stationuli 项目**，**强烈推荐使用 Tauri 2.0**：
+
+- ✅ 项目初期，无历史包袱
+- ✅ 需要深度系统集成，2.0 插件系统更强大
+- ✅ 安全要求高，2.0 安全性更好
+- ✅ 未来可能扩展 iOS，2.0 支持移动端
+- ✅ 长期维护，持续获得更新
 
 **Tauri能否满足产品功能需求？**
 
 ✅ **完全满足**，原因如下：
 
 **1. 文件传输功能** ✅
+
 - ✅ **文件系统访问**：`tauri-plugin-fs`提供完整的文件读写能力
 - ✅ **网络协议**：Rust后端可直接使用`quinn`（QUIC）和`tokio`（TCP）
 - ✅ **mDNS发现**：Rust后端可使用`libmdns`库
@@ -289,6 +620,7 @@ Stationuli 致力于帮助用户打造**完全自主、完全离线、完全私�
 - ✅ **大文件处理**：Rust后端可高效处理文件分片、断点续传
 
 **2. 设备控制功能（PC端作为被控制端）** ✅
+
 - ✅ **屏幕捕获**：
   - Windows：Rust后端可直接调用`windows` crate访问DXGI API
   - macOS：Rust后端可直接调用`core-graphics`和`avfoundation` crate
@@ -302,17 +634,20 @@ Stationuli 致力于帮助用户打造**完全自主、完全离线、完全私�
   - 支持文本、图片等格式
 
 **3. 网络功能** ✅
+
 - ✅ **NAT穿透**：Rust后端可使用`stun`、`turn`等库
 - ✅ **P2P连接**：Rust后端完全支持QUIC/TCP直连
 - ✅ **设备发现**：Rust后端支持mDNS（局域网）和手动连接（远程）
 
 **4. 系统集成** ✅
+
 - ✅ **系统通知**：`tauri-plugin-notification`
 - ✅ **后台运行**：Tauri支持系统托盘和后台服务
 - ✅ **权限管理**：Tauri支持请求系统权限（网络、文件等）
 - ✅ **自动启动**：可通过系统API实现开机自启
 
 **实现方式**：
+
 ```
 ┌─────────────────────────────────────┐
 │   Tauri前端 (React)                 │
@@ -335,12 +670,14 @@ Stationuli 致力于帮助用户打造**完全自主、完全离线、完全私�
 ```
 
 **注意事项**：
+
 - ⚠️ **屏幕捕获权限**：macOS需要屏幕录制权限，Tauri可引导用户授权
 - ⚠️ **输入模拟权限**：某些系统可能需要辅助功能权限
 - ⚠️ **网络权限**：需要防火墙和网络访问权限
 - ✅ **所有功能均可通过Rust后端实现**，Tauri提供了完整的系统访问能力
 
 **为什么Jetpack Compose使用Kotlin而非Java？**
+
 - ✅ **官方推荐**：Google官方推荐Kotlin作为Android开发的首选语言
 - ✅ **Compose原生支持**：Jetpack Compose是Kotlin-first框架，语法更简洁
 - ✅ **现代特性**：Kotlin提供协程、空安全、扩展函数等现代语言特性
@@ -349,6 +686,7 @@ Stationuli 致力于帮助用户打造**完全自主、完全离线、完全私�
 - ⚠️ **注意**：虽然Android也支持Java，但Jetpack Compose主要设计用于Kotlin，使用Java开发Compose会非常困难
 
 **为什么使用mDNS进行设备发现？**
+
 - ✅ 零配置，局域网自动发现
 - ✅ 无需服务器，完全P2P
 - ✅ 系统原生支持，性能好
@@ -357,6 +695,7 @@ Stationuli 致力于帮助用户打造**完全自主、完全离线、完全私�
 **移动端：React Native + Expo vs 原生Compose？**
 
 **选择React Native + Expo的优势**：
+
 - ✅ **技术栈统一**：与PC端Tauri（React）保持一致，代码复用率高
 - ✅ **UI组件共享**：React组件可在PC端和Android端复用
 - ✅ **状态管理统一**：Zustand等状态管理库可跨平台使用
@@ -367,18 +706,21 @@ Stationuli 致力于帮助用户打造**完全自主、完全离线、完全私�
 - ✅ **维护成本低**：只需维护一套React代码库
 
 **选择React Native + Expo的注意事项**：
+
 - ⚠️ **原生模块**：需要将Rust核心库封装为Native Module（通过FFI）
 - ⚠️ **性能考虑**：网络传输等核心功能通过Native Module实现，性能影响小（<5%）
 - ⚠️ **Expo限制**：某些高级功能可能需要EAS Build或eject到bare workflow
 - ⚠️ **包体积**：相比纯原生略大（~5-10MB），但可接受
 
 **选择Jetpack Compose的劣势**：
+
 - ❌ **技术栈不一致**：PC端React，Android端Kotlin，代码无法复用
 - ❌ **维护成本高**：需要维护两套UI代码和业务逻辑
 - ❌ **开发效率低**：新功能需要在两个平台分别实现
 - ❌ **团队技能要求**：需要同时掌握React和Kotlin
 
 **推荐方案**：
+
 - **强烈推荐**：**React Native + Expo**（技术栈统一，代码复用，维护成本低）
 - **备选方案**：**Jetpack Compose**（仅在追求极致性能且不考虑代码复用时选择）
 
@@ -389,6 +731,7 @@ Stationuli 致力于帮助用户打造**完全自主、完全离线、完全私�
 **核心思路**：PC端和Android端统一使用React生态，实现代码复用
 
 **架构优势**：
+
 - ✅ **UI组件共享**：React组件可在Tauri和React Native中复用
 - ✅ **状态管理统一**：Zustand状态管理库跨平台使用
 - ✅ **业务逻辑复用**：设备发现、文件选择等逻辑可共享
@@ -397,6 +740,7 @@ Stationuli 致力于帮助用户打造**完全自主、完全离线、完全私�
 #### 3.2 架构对比：技术栈统一 vs 技术栈分离
 
 **方案A：技术栈分离（Kotlin + Compose）**
+
 ```
 PC端 (Tauri)              Android端 (Compose)
 ┌─────────────┐          ┌─────────────┐
@@ -414,6 +758,7 @@ PC端 (Tauri)              Android端 (Compose)
 ```
 
 **方案B：技术栈统一（React Native + Expo）✅ 推荐**
+
 ```
 PC端 (Tauri)              Android端 (RN)
 ┌─────────────┐          ┌─────────────┐
@@ -458,14 +803,454 @@ PC端 (Tauri)              Android端 (RN)
 ```
 
 **实现要点**：
+
 1. **Rust核心库封装**：通过`jni`或`cxx`创建Kotlin可调用的接口
 2. **Native Module创建**：使用`@react-native-community/bob`或手动创建
 3. **Expo配置**：使用`expo-build-properties`配置原生构建选项
 4. **开发流程**：Expo Go用于UI开发，EAS Build用于完整功能测试
 
-#### 3.3 代码复用示例
+#### 3.3.1 Expo 中集成 Native Module 详细指南
+
+**✅ 确认：产品完全可以使用 Expo**
+
+Expo 支持自定义 Native Module，可以通过以下方式集成：
+
+##### 方式一：使用 Expo Config Plugin（推荐）
+
+Expo Config Plugin 允许在构建时修改原生代码，无需 eject。
+
+**1. 项目结构**
+
+```
+stationuli-mobile/
+├── app.json                    # Expo 配置
+├── package.json
+├── src/                        # React Native 代码
+│   ├── components/
+│   └── hooks/
+├── native-modules/             # Native Module 代码
+│   └── stationuli-core/
+│       ├── android/            # Android 原生代码
+│       │   ├── src/main/java/com/stationuli/
+│       │   │   └── StationuliModule.kt
+│       │   ├── build.gradle
+│       │   └── CMakeLists.txt  # 用于编译 Rust 库
+│       ├── ios/               # iOS 原生代码（未来扩展）
+│       └── package.json
+├── rust-core/                  # Rust 核心库
+│   ├── Cargo.toml
+│   └── src/
+└── expo-plugins/               # Expo Config Plugins
+    └── with-stationuli-native.js
+```
+
+**2. 创建 Expo Config Plugin**
+
+```javascript
+// expo-plugins/with-stationuli-native.js
+const { withDangerousMod } = require("@expo/config-plugins");
+const fs = require("fs");
+const path = require("path");
+
+module.exports = function withStationuliNative(config) {
+  return withDangerousMod(config, [
+    "android",
+    async (config) => {
+      const gradlePath = path.join(
+        config.modRequest.platformProjectRoot,
+        "app/build.gradle"
+      );
+
+      // 读取 build.gradle
+      let gradleContent = fs.readFileSync(gradlePath, "utf8");
+
+      // 添加 Rust 库依赖
+      if (!gradleContent.includes("stationuli-core")) {
+        gradleContent += `
+// Stationuli Native Module
+dependencies {
+    implementation project(':stationuli-core')
+}
+`;
+      }
+
+      // 添加 CMake 配置（用于编译 Rust）
+      if (!gradleContent.includes("externalNativeBuild")) {
+        gradleContent += `
+android {
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+        }
+    }
+}
+`;
+      }
+
+      fs.writeFileSync(gradlePath, gradleContent);
+      return config;
+    },
+  ]);
+};
+```
+
+**3. 配置 app.json**
+
+```json
+{
+  "expo": {
+    "name": "Stationuli",
+    "plugins": [
+      "./expo-plugins/with-stationuli-native.js",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 34,
+            "minSdkVersion": 28,
+            "targetSdkVersion": 34,
+            "buildToolsVersion": "34.0.0",
+            "ndkVersion": "25.1.8937393"
+          }
+        }
+      ]
+    ]
+  }
+}
+```
+
+**4. Rust 核心库编译为 Android 库**
+
+**Rust 端（使用 `jni` crate）**：
+
+```rust
+// rust-core/Cargo.toml
+[package]
+name = "stationuli-core"
+version = "0.1.0"
+
+[lib]
+name = "stationuli_core"
+crate-type = ["cdylib"]  # 编译为动态库
+
+[dependencies]
+jni = "0.21"
+tokio = { version = "1", features = ["full"] }
+quinn = "0.10"
+# ... 其他依赖
+
+// rust-core/src/lib.rs
+use jni::JNIEnv;
+use jni::objects::{JClass, JString};
+use jni::sys::{jstring, jboolean};
+
+#[no_mangle]
+pub extern "system" fn Java_com_stationuli_StationuliModule_startMdnsDiscovery(
+    env: JNIEnv,
+    _class: JClass,
+) -> jstring {
+    // 调用 Rust 核心逻辑
+    let result = start_mdns_discovery();
+    let output = env.new_string(result).unwrap();
+    output.into_raw()
+}
+
+#[no_mangle]
+pub extern "system" fn Java_com_stationuli_StationuliModule_connectToDevice(
+    env: JNIEnv,
+    _class: JClass,
+    device_id: JString,
+) -> jboolean {
+    let device_id: String = env
+        .get_string(device_id)
+        .expect("Couldn't get java string!")
+        .into();
+
+    let success = connect_to_device(&device_id);
+    success as jboolean
+}
+
+// Rust 核心逻辑
+fn start_mdns_discovery() -> String {
+    // 实现 mDNS 发现逻辑
+    // 返回 JSON 字符串
+    r#"[]"#.to_string()
+}
+
+fn connect_to_device(device_id: &str) -> bool {
+    // 实现连接逻辑
+    true
+}
+```
+
+**5. Android Native Module（Kotlin）**
+
+```kotlin
+// native-modules/stationuli-core/android/src/main/java/com/stationuli/StationuliModule.kt
+package com.stationuli
+
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.ReactContextBaseJavaModule
+import com.facebook.react.bridge.ReactMethod
+import com.facebook.react.bridge.Promise
+
+class StationuliModule(reactContext: ReactApplicationContext)
+    : ReactContextBaseJavaModule(reactContext) {
+
+    init {
+        // 加载编译好的 Rust 动态库
+        System.loadLibrary("stationuli_core")
+    }
+
+    override fun getName(): String {
+        return "StationuliModule"
+    }
+
+    // 声明 Rust FFI 函数
+    external fun startMdnsDiscovery(): String
+    external fun connectToDevice(deviceId: String): Boolean
+    external fun sendFile(filePath: String, targetDeviceId: String): Boolean
+
+    @ReactMethod
+    fun discoverDevices(promise: Promise) {
+        try {
+            val devicesJson = startMdnsDiscovery()
+            promise.resolve(devicesJson)
+        } catch (e: Exception) {
+            promise.reject("DISCOVERY_ERROR", e.message, e)
+        }
+    }
+
+    @ReactMethod
+    fun connect(deviceId: String, promise: Promise) {
+        try {
+            val success = connectToDevice(deviceId)
+            if (success) {
+                promise.resolve(true)
+            } else {
+                promise.reject("CONNECTION_ERROR", "Failed to connect")
+            }
+        } catch (e: Exception) {
+            promise.reject("CONNECTION_ERROR", e.message, e)
+        }
+    }
+
+    @ReactMethod
+    fun sendFile(filePath: String, targetDeviceId: String, promise: Promise) {
+        try {
+            val success = sendFile(filePath, targetDeviceId)
+            if (success) {
+                promise.resolve(true)
+            } else {
+                promise.reject("SEND_ERROR", "Failed to send file")
+            }
+        } catch (e: Exception) {
+            promise.reject("SEND_ERROR", e.message, e)
+        }
+    }
+}
+```
+
+**6. 注册 Native Module**
+
+```kotlin
+// native-modules/stationuli-core/android/src/main/java/com/stationuli/StationuliPackage.kt
+package com.stationuli
+
+import com.facebook.react.ReactPackage
+import com.facebook.react.bridge.NativeModule
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.uimanager.ViewManager
+
+class StationuliPackage : ReactPackage {
+    override fun createNativeModules(
+        reactContext: ReactApplicationContext
+    ): List<NativeModule> {
+        return listOf(StationuliModule(reactContext))
+    }
+
+    override fun createViewManagers(
+        reactContext: ReactApplicationContext
+    ): List<ViewManager<*, *>> {
+        return emptyList()
+    }
+}
+```
+
+**7. CMakeLists.txt（编译 Rust 库）**
+
+```cmake
+# native-modules/stationuli-core/android/src/main/cpp/CMakeLists.txt
+cmake_minimum_required(VERSION 3.18.1)
+project("stationuli_core")
+
+# 设置 Rust 工具链
+set(RUST_TOOLCHAIN "${CMAKE_CURRENT_SOURCE_DIR}/../../../../rust-core")
+
+# 编译 Rust 库
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libstationuli_core.so
+    COMMAND cargo build --target aarch64-linux-android --release
+    WORKING_DIRECTORY ${RUST_TOOLCHAIN}
+    COMMENT "Building Rust core library"
+)
+
+add_library(stationuli_core SHARED IMPORTED)
+set_target_properties(stationuli_core PROPERTIES
+    IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/libstationuli_core.so
+)
+```
+
+**8. build.gradle 配置**
+
+```gradle
+// native-modules/stationuli-core/android/build.gradle
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 34
+
+    defaultConfig {
+        minSdkVersion 28
+        targetSdkVersion 34
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+        }
+    }
+}
+
+dependencies {
+    implementation 'com.facebook.react:react-native:+'
+}
+```
+
+**9. React Native 调用**
+
+```typescript
+// src/hooks/useStationuli.ts
+import { NativeModules } from "react-native";
+
+const { StationuliModule } = NativeModules;
+
+export function useDeviceDiscovery() {
+  const [devices, setDevices] = useState([]);
+
+  useEffect(() => {
+    StationuliModule.discoverDevices()
+      .then((devicesJson: string) => {
+        const devices = JSON.parse(devicesJson);
+        setDevices(devices);
+      })
+      .catch((error: Error) => {
+        console.error("Discovery error:", error);
+      });
+  }, []);
+
+  return devices;
+}
+
+export async function connectToDevice(deviceId: string): Promise<boolean> {
+  return StationuliModule.connect(deviceId);
+}
+
+export async function sendFile(
+  filePath: string,
+  targetDeviceId: string
+): Promise<boolean> {
+  return StationuliModule.sendFile(filePath, targetDeviceId);
+}
+```
+
+##### 方式二：使用 Expo Dev Client（开发时）
+
+对于开发阶段，可以使用 Expo Dev Client 替代 Expo Go：
+
+```bash
+# 安装 Expo Dev Client
+npx expo install expo-dev-client
+
+# 预构建（生成原生代码）
+npx expo prebuild
+
+# 运行开发客户端
+npx expo run:android
+```
+
+##### 方式三：使用 EAS Build（生产构建）
+
+```bash
+# 安装 EAS CLI
+npm install -g eas-cli
+
+# 配置 EAS
+eas build:configure
+
+# 构建 Android APK
+eas build --platform android
+```
+
+**构建配置（eas.json）**：
+
+```json
+{
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  }
+}
+```
+
+##### 开发流程建议
+
+1. **UI 开发阶段**：使用 Expo Go 快速迭代 UI（不涉及 Native Module）
+2. **功能集成阶段**：切换到 Expo Dev Client，测试 Native Module
+3. **生产构建**：使用 EAS Build 进行云端构建
+
+##### 注意事项
+
+⚠️ **重要提示**：
+
+1. **Rust 编译目标**：需要为 Android 交叉编译 Rust 库
+
+   ```bash
+   # 安装 Android 目标
+   rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+
+   # 编译
+   cargo build --target aarch64-linux-android --release
+   ```
+
+2. **NDK 版本**：确保使用兼容的 NDK 版本（推荐 25.x）
+
+3. **Expo SDK 版本**：使用 Expo SDK 50+ 以获得更好的 Native Module 支持
+
+4. **热更新限制**：Native Module 的更改需要重新构建，不支持 OTA 更新
+
+5. **调试**：使用 `adb logcat` 查看原生日志，使用 React Native Debugger 调试 JS 代码
+
+#### 3.4 代码复用示例
 
 **共享UI组件（React）**：
+
 ```typescript
 // shared/components/DeviceList.tsx
 // 可在Tauri和React Native中复用
@@ -473,8 +1258,8 @@ export function DeviceList({ devices, onSelect }: Props) {
   return (
     <View>
       {devices.map(device => (
-        <DeviceItem 
-          key={device.id} 
+        <DeviceItem
+          key={device.id}
           device={device}
           onPress={() => onSelect(device)}
         />
@@ -485,38 +1270,42 @@ export function DeviceList({ devices, onSelect }: Props) {
 ```
 
 **共享业务逻辑（TypeScript）**：
+
 ```typescript
 // shared/hooks/useDeviceDiscovery.ts
 // 可在Tauri和React Native中复用
 export function useDeviceDiscovery() {
   const [devices, setDevices] = useState([]);
-  
+
   useEffect(() => {
     // PC端：通过Tauri调用Rust
     // Android端：通过Native Module调用Rust
     const discovered = discoverDevices();
     setDevices(discovered);
   }, []);
-  
+
   return devices;
 }
 ```
 
 **共享状态管理（Zustand）**：
+
 ```typescript
 // shared/stores/transferStore.ts
 // 可在Tauri和React Native中复用
 export const useTransferStore = create((set) => ({
   transfers: [],
-  addTransfer: (transfer) => set((state) => ({
-    transfers: [...state.transfers, transfer]
-  }))
+  addTransfer: (transfer) =>
+    set((state) => ({
+      transfers: [...state.transfers, transfer],
+    })),
 }));
 ```
 
 #### 3.4 设备发现机制
 
 **局域网发现（mDNS）**：
+
 - **PC端**：使用`libmdns`（Rust）实现Bonjour/Zeroconf协议
 - **Android端（原生）**：使用Android NSD（Network Service Discovery）API
 - **Android端（RN）**：通过Native Module调用Rust的`libmdns`库
@@ -524,6 +1313,7 @@ export const useTransferStore = create((set) => ({
 - **零配置**：无需手动输入IP地址，自动发现周边设备
 
 **远程连接**：
+
 - 支持通过设备ID/二维码手动连接
 - 使用STUN服务器进行NAT穿透
 - 支持中继模式（可选，用于复杂网络环境）
@@ -531,12 +1321,14 @@ export const useTransferStore = create((set) => ({
 #### 3.2 文件传输流程
 
 **连接建立**：
+
 1. 通过mDNS发现设备或手动输入设备ID
 2. 建立QUIC/TCP连接
 3. 进行密钥交换（X25519）
 4. 开始文件传输
 
 **传输优化**：
+
 - 大文件自动分片传输
 - 支持断点续传
 - 并行传输多个文件
@@ -545,16 +1337,19 @@ export const useTransferStore = create((set) => ({
 #### 3.3 控制功能实现
 
 **屏幕捕获**：
+
 - Windows：使用DXGI Desktop Duplication API
 - macOS：使用AVFoundation Screen Capture API
 - 60FPS低延迟编码（H.264/H.265）
 
 **输入模拟**：
+
 - Windows：SendInput API
 - macOS：CGEvent API
 - Android：通过QUIC传输输入事件
 
 **网络传输**：
+
 - 使用QUIC协议保证低延迟
 - 自适应码率控制
 - 前向纠错（FEC）减少丢包影响
@@ -562,6 +1357,7 @@ export const useTransferStore = create((set) => ({
 #### 3.4 Tauri实现示例
 
 **屏幕捕获（Windows）**：
+
 ```rust
 // src-tauri/src/main.rs
 use windows::Win32::Graphics::Direct3D11::*;
@@ -577,6 +1373,7 @@ async fn capture_screen() -> Result<Vec<u8>, String> {
 ```
 
 **屏幕捕获（macOS）**：
+
 ```rust
 // src-tauri/src/main.rs
 use core_graphics::display::*;
@@ -591,6 +1388,7 @@ async fn capture_screen() -> Result<Vec<u8>, String> {
 ```
 
 **输入模拟（Windows）**：
+
 ```rust
 // src-tauri/src/main.rs
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
@@ -615,6 +1413,7 @@ async fn simulate_key(key_code: u16) -> Result<(), String> {
 ```
 
 **文件传输（Tauri Command）**：
+
 ```rust
 // src-tauri/src/main.rs
 use tauri::Manager;
@@ -628,7 +1427,7 @@ async fn send_file(
     // 调用Rust核心库进行文件传输
     let core = StationuliCore::new();
     core.send_file(&file_path, &target_device_id).await?;
-    
+
     // 发送进度更新到前端
     app_handle.emit_all("transfer-progress", progress)?;
     Ok(())
@@ -636,41 +1435,43 @@ async fn send_file(
 ```
 
 **前端调用（React）**：
+
 ```typescript
 // src/App.tsx
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from "@tauri-apps/api/tauri";
 
 // 屏幕捕获
-const capture = await invoke<Uint8Array>('capture_screen');
+const capture = await invoke<Uint8Array>("capture_screen");
 
 // 输入模拟
-await invoke('simulate_key', { keyCode: 65 }); // 'A'键
+await invoke("simulate_key", { keyCode: 65 }); // 'A'键
 
 // 文件传输
-await invoke('send_file', {
-  filePath: '/path/to/file',
-  targetDeviceId: 'device-123'
+await invoke("send_file", {
+  filePath: "/path/to/file",
+  targetDeviceId: "device-123",
 });
 ```
 
 #### 3.5 React Native + Expo 实现示例
 
 **Native Module封装（Kotlin）**：
+
 ```kotlin
 // StationuliModule.kt
-class StationuliModule(reactContext: ReactApplicationContext) 
+class StationuliModule(reactContext: ReactApplicationContext)
     : ReactContextBaseJavaModule(reactContext) {
-    
+
     // 加载Rust核心库
     init {
         System.loadLibrary("linkuli_core")
     }
-    
+
     // Rust FFI函数声明
     external fun startMdnsDiscovery(): String
     external fun connectToDevice(deviceId: String): Boolean
     external fun sendFile(filePath: String, targetId: String): Promise
-    
+
     @ReactMethod
     fun discoverDevices(promise: Promise) {
         val devices = startMdnsDiscovery()
@@ -680,27 +1481,28 @@ class StationuliModule(reactContext: ReactApplicationContext)
 ```
 
 **React Native调用示例（TypeScript）**：
+
 ```typescript
 // useStationuli.ts
-import { NativeModules } from 'react-native';
+import { NativeModules } from "react-native";
 
 const { StationuliModule } = NativeModules;
 
 export function useDeviceDiscovery() {
   const [devices, setDevices] = useState([]);
-  
+
   useEffect(() => {
     StationuliModule.discoverDevices().then((devices: string) => {
       setDevices(JSON.parse(devices));
     });
   }, []);
-  
+
   return devices;
 }
 
 // 文件传输
 export async function sendFile(
-  filePath: string, 
+  filePath: string,
   targetDeviceId: string
 ): Promise<void> {
   return StationuliModule.sendFile(filePath, targetDeviceId);
@@ -708,6 +1510,7 @@ export async function sendFile(
 ```
 
 **Expo配置（app.json）**：
+
 ```json
 {
   "expo": {
@@ -740,20 +1543,20 @@ export async function sendFile(
 
 ### 传输加速技术
 
-| 技术 | 适用场景 | 提速效果 |
-|------|----------|----------|
-| 前向纠错(FEC) | 高丢包网络 | +40% |
-| 自适应压缩 | 图文文件 | +70% |
-| 并行分片 | 大文件(>1GB) | +300% |
+| 技术          | 适用场景     | 提速效果 |
+| ------------- | ------------ | -------- |
+| 前向纠错(FEC) | 高丢包网络   | +40%     |
+| 自适应压缩    | 图文文件     | +70%     |
+| 并行分片      | 大文件(>1GB) | +300%    |
 
 ## 📌 部署要求
 
 ### PC端
 
-| 平台 | 最低要求 | 说明 |
-|------|----------|------|
-| Windows | Win10 x64, 4GB RAM | 需要管理员权限（用于网络发现） |
-| macOS | Big Sur, Apple Silicon/Intel | 需要网络权限授权 |
+| 平台    | 最低要求                     | 说明                           |
+| ------- | ---------------------------- | ------------------------------ |
+| Windows | Win10 x64, 4GB RAM           | 需要管理员权限（用于网络发现） |
+| macOS   | Big Sur, Apple Silicon/Intel | 需要网络权限授权               |
 
 ### Android端
 
@@ -781,4 +1584,3 @@ export async function sendFile(
 ---
 
 **Stationuli** - 打造您的个人工作站，让设备连接更简单、更安全、更自主 🚀
-

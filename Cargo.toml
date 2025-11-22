@@ -1,0 +1,46 @@
+[workspace]
+members = [
+    "packages/core",
+    "apps/desktop/src-tauri",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["trueLoving"]
+license = "MIT"
+
+[workspace.dependencies]
+# 异步运行时
+tokio = { version = "1", features = ["full"] }
+
+# 网络协议
+quinn = "0.10"
+libmdns = "0.7"
+
+# 加密
+ring = "0.17"
+x25519-dalek = "2.0"
+
+# 序列化
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# FFI 支持
+jni = "0.21"
+
+# 工具
+anyhow = "1"
+thiserror = "1"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Tauri 相关
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-build = { version = "2", features = [] }
+
+# 测试
+tokio-test = "0.4"
+

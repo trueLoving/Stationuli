@@ -1,0 +1,28 @@
+# Rust 代码格式化配置
+# 使用稳定版本的 rustfmt 配置
+
+# 每行最大宽度
+max_width = 100
+
+# 使用空格而非制表符
+hard_tabs = false
+
+# 缩进大小
+tab_spaces = 2
+
+# 换行样式
+newline_style = "Unix"
+
+# 移除嵌套括号
+remove_nested_parens = true
+
+# 使用尾随逗号（在适用的情况下）
+use_try_shorthand = true
+
+# 使用字段初始化简写
+use_field_init_shorthand = true
+
+# 注意：以下选项需要 nightly 版本的 Rust，已移除：
+# - format_code_in_doc_comments (需要 nightly)
+# - format_strings (需要 nightly)
+# - merge_imports (需要 nightly)

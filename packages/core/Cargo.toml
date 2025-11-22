@@ -1,0 +1,37 @@
+[package]
+name = "stationuli-core"
+description = "Stationuli core library - P2P file transfer and device control"
+edition = "2024"
+
+[lib]
+name = "stationuli_core"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# 异步运行时
+tokio = { workspace = true }
+
+# 网络协议
+quinn = { workspace = true }
+libmdns = { workspace = true }
+
+# 加密
+ring = { workspace = true }
+x25519-dalek = { workspace = true }
+
+# 序列化
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# FFI 支持（用于 Native Module）
+jni = { workspace = true }
+
+# 工具
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+
