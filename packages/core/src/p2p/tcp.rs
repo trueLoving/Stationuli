@@ -4,7 +4,7 @@ use crate::Result;
 use std::net::SocketAddr;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
-use tracing::{error, info};
+use tracing::info;
 
 /// TCP 连接
 pub struct TcpConnection {

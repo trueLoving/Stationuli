@@ -133,38 +133,71 @@ function App() {
   }, []);
 
   return (
-    <div className="container">
-      <h1>Stationuli - 文件传输</h1>
+    <div className="max-w-3xl mx-auto px-5 py-5 font-sans">
+      <h1 className="text-gray-800 text-center text-3xl font-bold mb-8">
+        Stationuli - 文件传输
+      </h1>
 
-      <div className="section">
-        <h2>设备发现</h2>
-        <div className="controls">
+      <div className="my-8 p-5 bg-gray-100 rounded-lg">
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">设备发现</h2>
+        <div className="flex gap-2.5 mb-4">
           {!isDiscovering ? (
-            <button onClick={startDiscovery}>启动设备发现</button>
+            <button
+              onClick={startDiscovery}
+              className="px-5 py-2.5 bg-blue-600 text-white border-none rounded cursor-pointer text-sm hover:bg-blue-700 transition-colors"
+            >
+              启动设备发现
+            </button>
           ) : (
-            <button onClick={stopDiscovery}>停止设备发现</button>
+            <button
+              onClick={stopDiscovery}
+              className="px-5 py-2.5 bg-blue-600 text-white border-none rounded cursor-pointer text-sm hover:bg-blue-700 transition-colors"
+            >
+              停止设备发现
+            </button>
           )}
-          <button onClick={addDevice}>手动添加设备</button>
+          <button
+            onClick={addDevice}
+            className="px-5 py-2.5 bg-blue-600 text-white border-none rounded cursor-pointer text-sm hover:bg-blue-700 transition-colors"
+          >
+            手动添加设备
+          </button>
         </div>
 
-        {deviceId && <p className="device-id">本设备 ID: {deviceId}</p>}
+        {deviceId && (
+          <p className="p-2.5 bg-blue-50 rounded font-mono text-xs mb-4">
+            本设备 ID: {deviceId}
+          </p>
+        )}
 
-        <div className="devices">
-          <h3>发现的设备 ({devices.length})</h3>
+        <div>
+          <h3 className="text-lg font-medium mb-3 text-gray-700">
+            发现的设备 ({devices.length})
+          </h3>
           {devices.length === 0 ? (
-            <p>暂无设备，请确保设备在同一 WiFi 网络下</p>
+            <p className="text-gray-600">
+              暂无设备，请确保设备在同一 WiFi 网络下
+            </p>
           ) : (
-            <ul>
+            <ul className="list-none p-0">
               {devices.map((device) => (
-                <li key={device.id} className="device-item">
+                <li
+                  key={device.id}
+                  className="flex justify-between items-center p-4 my-2.5 bg-white rounded shadow-sm"
+                >
                   <div>
-                    <strong>{device.name}</strong>
+                    <strong className="text-gray-800">{device.name}</strong>
                     <br />
-                    <span className="device-info">
+                    <span className="text-gray-600 text-xs">
                       {device.address}:{device.port} ({device.device_type})
                     </span>
                   </div>
-                  <button onClick={() => sendFile(device)}>发送文件</button>
+                  <button
+                    onClick={() => sendFile(device)}
+                    className="px-5 py-2.5 bg-blue-600 text-white border-none rounded cursor-pointer text-sm hover:bg-blue-700 transition-colors"
+                  >
+                    发送文件
+                  </button>
                 </li>
               ))}
             </ul>
@@ -172,26 +205,33 @@ function App() {
         </div>
       </div>
 
-      <div className="section">
-        <h2>文件选择</h2>
-        <div className="file-selector">
-          <button onClick={selectFile}>选择文件</button>
+      <div className="my-8 p-5 bg-gray-100 rounded-lg">
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">文件选择</h2>
+        <div className="my-4">
+          <button
+            onClick={selectFile}
+            className="px-5 py-2.5 bg-blue-600 text-white border-none rounded cursor-pointer text-sm hover:bg-blue-700 transition-colors"
+          >
+            选择文件
+          </button>
           {selectedFile && (
-            <p className="selected-file">
+            <p className="mt-2.5 p-2.5 bg-blue-50 rounded font-mono text-sm">
               已选择: {selectedFile.split("/").pop()}
             </p>
           )}
         </div>
 
         {transferProgress > 0 && transferProgress < 100 && (
-          <div className="progress">
-            <div className="progress-bar">
+          <div className="mt-4">
+            <div className="w-full h-5 bg-gray-300 rounded-full overflow-hidden">
               <div
-                className="progress-fill"
+                className="h-full bg-green-600 transition-all duration-300"
                 style={{ width: `${transferProgress}%` }}
               />
             </div>
-            <span>{transferProgress}%</span>
+            <span className="block mt-2 text-sm text-gray-600">
+              {transferProgress}%
+            </span>
           </div>
         )}
       </div>

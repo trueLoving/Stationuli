@@ -23,9 +23,6 @@ x25519-dalek = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
-# FFI 支持（用于 Native Module）
-jni = { workspace = true }
-
 # 工具
 anyhow = { workspace = true }
 thiserror = { workspace = true }

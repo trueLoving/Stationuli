@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{error, info, warn};
+use tracing::info;
 
 /// 设备信息
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

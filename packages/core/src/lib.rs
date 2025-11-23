@@ -3,7 +3,6 @@
 //! 提供 P2P 文件传输、设备发现、加密等核心功能
 
 pub mod crypto;
-pub mod ffi;
 pub mod file;
 pub mod p2p;
 

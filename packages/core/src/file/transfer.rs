@@ -6,7 +6,7 @@ use crate::p2p::tcp::TcpConnection;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use tokio::fs;
-use tracing::{error, info, warn};
+use tracing::{info, warn};
 
 /// 文件传输消息类型
 #[derive(Debug, Serialize, Deserialize)]
@@ -43,6 +43,19 @@ impl FileTransfer {
     file_path: &str,
     target_address: &str,
     target_port: u16,
+  ) -> Result<()> {
+    self
+      .send_file_with_progress(file_path, target_address, target_port, None)
+      .await
+  }
+
+  /// 发送文件（带进度回调）
+  pub async fn send_file_with_progress(
+    &self,
+    file_path: &str,
+    target_address: &str,
+    target_port: u16,
+    progress_callback: Option<Box<dyn Fn(u64, u64) + Send + Sync>>, // (sent_bytes, total_bytes)
   ) -> Result<()> {
     info!(
       "Sending file: {} to {}:{}",
@@ -87,6 +100,7 @@ impl FileTransfer {
     );
 
     // 发送所有分片
+    let mut sent_bytes = 0u64;
     for (i, chunk) in chunks.iter().enumerate() {
       let chunk_msg = TransferMessage::Chunk {
         chunk_id: chunk.chunk_id,
@@ -96,8 +110,20 @@ impl FileTransfer {
         .map_err(|e| crate::Error::Protocol(format!("Serialize failed: {}", e)))?;
       connection.send(&chunk_data).await?;
 
+      sent_bytes += chunk.data.len() as u64;
+
+      // 调用进度回调
+      if let Some(ref callback) = progress_callback {
+        callback(sent_bytes, file_size);
+      }
+
       if (i + 1) % 10 == 0 {
-        info!("Sent {}/{} chunks", i + 1, chunks.len());
+        info!(
+          "Sent {}/{} chunks ({}%)",
+          i + 1,
+          chunks.len(),
+          (sent_bytes * 100 / file_size)
+        );
       }
     }
 
@@ -191,19 +217,30 @@ impl FileTransfer {
     let file_data = FileChunk::merge_chunks(chunks)?;
 
     // 保存文件
+    // save_path 可以是目录路径或完整文件路径
     let save_path = Path::new(save_path);
-    if let Some(parent) = save_path.parent() {
+    let final_path = if save_path.is_dir() || save_path.ends_with("/") || save_path.ends_with("\\")
+    {
+      // 如果是目录路径，使用接收到的文件名
+      save_path.join(&file_name)
+    } else {
+      // 如果是完整文件路径，直接使用
+      save_path.to_path_buf()
+    };
+
+    // 确保父目录存在
+    if let Some(parent) = final_path.parent() {
       fs::create_dir_all(parent)
         .await
         .map_err(|e| crate::Error::File(format!("Create directory failed: {}", e)))?;
     }
 
-    fs::write(save_path, &file_data)
+    fs::write(&final_path, &file_data)
       .await
       .map_err(|e| crate::Error::File(format!("Write file failed: {}", e)))?;
 
     connection.close()?;
-    info!("File received and saved: {}", save_path.display());
+    info!("File received and saved: {}", final_path.display());
 
     Ok(())
   }

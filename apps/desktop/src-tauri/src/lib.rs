@@ -50,6 +50,14 @@ async fn start_discovery(
           .unwrap()
           .join("received_files");
 
+        // 确保目录存在
+        if let Err(e) = std::fs::create_dir_all(&save_dir) {
+          eprintln!("Failed to create save directory: {}", e);
+          tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+          continue;
+        }
+
+        // receive_file 现在可以接受目录路径，会自动使用接收到的文件名
         if let Err(e) = transfer
           .receive_file(
             save_dir.to_str().unwrap_or("/tmp/stationuli_received"),
@@ -105,26 +113,34 @@ async fn send_file(
   app: tauri::AppHandle,
 ) -> Result<String, String> {
   let transfer = state.file_transfer.read().await;
-
-  // 发送进度更新
   let app_clone = app.clone();
   let file_path_clone = file_path.clone();
 
-  tokio::spawn(async move {
-    // 这里可以添加进度跟踪
-    app_clone
-      .emit(
-        "transfer-progress",
-        serde_json::json!({
-          "file": file_path_clone,
-          "progress": 0
-        }),
-      )
-      .ok();
-  });
-
+  // 使用进度回调发送进度更新
   transfer
-    .send_file(&file_path, &target_address, target_port)
+    .send_file_with_progress(
+      &file_path,
+      &target_address,
+      target_port,
+      Some(move |sent_bytes, total_bytes| {
+        let progress = if total_bytes > 0 {
+          (sent_bytes * 100 / total_bytes) as u32
+        } else {
+          0
+        };
+        app_clone
+          .emit(
+            "transfer-progress",
+            serde_json::json!({
+              "file": file_path_clone.clone(),
+              "progress": progress,
+              "sent": sent_bytes,
+              "total": total_bytes
+            }),
+          )
+          .ok();
+      }),
+    )
     .await
     .map_err(|e| format!("Failed to send file: {}", e))?;
 
