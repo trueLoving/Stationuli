@@ -125,6 +125,18 @@ Stationuli 致力于帮助用户打造**完全自主、完全离线、完全私�
 
 ## 🛠️ 技术架构
 
+> 📚 **相关文档**：
+>
+> - [Rust 库集成方案对比](./docs/RUST_INTEGRATION_COMPARISON.md) - PC 端与 Android 端集成方案详细对比
+> - [Android 集成方案全面对比](./docs/ANDROID_INTEGRATION_ALTERNATIVES.md) - 所有可行的 Android 集成方案（Tauri Mobile、WASM、Dioxus 等）
+> - [Tauri Mobile 方案文档](./docs/TAURI_MOBILE_SOLUTION.md) - Tauri Mobile 详细实现方案
+> - [Tauri 与 Node.js 生态支持](./docs/TAURI_NODEJS_ECOSYSTEM.md) - 了解哪些 npm 包可以在 Tauri Mobile 中使用
+> - [Tauri Mobile 构建产物分析](./docs/TAURI_MOBILE_BUILD_PRODUCTS.md) - 构建速度、体积、性能、WebView 依赖详细分析
+> - [Tauri 构建流程详解](./docs/TAURI_BUILD_PROCESS.md) - 完整的构建流程和 CI/CD 配置
+> - [简历项目优化指南（React Native 版本）](./docs/RESUME_OPTIMIZATION.md) - 使用 React Native 的简历优化建议
+> - [简历项目优化指南（Tauri Mobile 版本）](./docs/RESUME_OPTIMIZATION_TAURI_MOBILE.md) - 使用 Tauri Mobile 的简历优化建议
+> - [文件传输实现文档](./docs/FILE_TRANSFER_IMPLEMENTATION.md) - 文件传输功能实现细节
+
 ### 0. 项目目录结构建议
 
 **推荐的 Monorepo 目录结构**：

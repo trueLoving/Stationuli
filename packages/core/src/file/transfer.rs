@@ -1,26 +1,210 @@
 //! 文件传输模块
 
 use crate::Result;
+use crate::file::chunk::FileChunk;
+use crate::p2p::tcp::TcpConnection;
+use serde::{Deserialize, Serialize};
+use std::path::Path;
+use tokio::fs;
+use tracing::{error, info, warn};
+
+/// 文件传输消息类型
+#[derive(Debug, Serialize, Deserialize)]
+pub enum TransferMessage {
+  /// 开始传输
+  StartTransfer {
+    file_name: String,
+    file_size: u64,
+    total_chunks: u64,
+  },
+  /// 传输分片
+  Chunk { chunk_id: u64, data: Vec<u8> },
+  /// 传输完成
+  Complete,
+  /// 传输错误
+  Error(String),
+}
 
 /// 文件传输
 pub struct FileTransfer {
-  // TODO: 实现文件传输
+  chunk_size: usize,
 }
 
 impl FileTransfer {
   pub fn new() -> Self {
-    Self {}
+    Self {
+      chunk_size: 1024 * 1024, // 1MB per chunk
+    }
   }
 
   /// 发送文件
-  pub async fn send_file(&mut self, path: &str, target: &str) -> Result<()> {
-    // TODO: 实现文件发送
+  pub async fn send_file(
+    &self,
+    file_path: &str,
+    target_address: &str,
+    target_port: u16,
+  ) -> Result<()> {
+    info!(
+      "Sending file: {} to {}:{}",
+      file_path, target_address, target_port
+    );
+
+    // 读取文件
+    let file_path = Path::new(file_path);
+    let file_name = file_path
+      .file_name()
+      .and_then(|n| n.to_str())
+      .ok_or_else(|| crate::Error::File("Invalid file path".to_string()))?
+      .to_string();
+
+    let file_data = fs::read(file_path)
+      .await
+      .map_err(|e| crate::Error::File(format!("Read file failed: {}", e)))?;
+
+    let file_size = file_data.len() as u64;
+
+    // 建立连接
+    let mut connection = TcpConnection::connect(target_address, target_port).await?;
+
+    // 分片文件
+    let chunks = FileChunk::split_file(&file_data, self.chunk_size, file_name.clone());
+
+    // 发送开始传输消息
+    let start_msg = TransferMessage::StartTransfer {
+      file_name: file_name.clone(),
+      file_size,
+      total_chunks: chunks.len() as u64,
+    };
+    let start_data = serde_json::to_vec(&start_msg)
+      .map_err(|e| crate::Error::Protocol(format!("Serialize failed: {}", e)))?;
+    connection.send(&start_data).await?;
+
+    info!(
+      "Sending file: {} ({} bytes, {} chunks)",
+      file_name,
+      file_size,
+      chunks.len()
+    );
+
+    // 发送所有分片
+    for (i, chunk) in chunks.iter().enumerate() {
+      let chunk_msg = TransferMessage::Chunk {
+        chunk_id: chunk.chunk_id,
+        data: chunk.data.clone(),
+      };
+      let chunk_data = serde_json::to_vec(&chunk_msg)
+        .map_err(|e| crate::Error::Protocol(format!("Serialize failed: {}", e)))?;
+      connection.send(&chunk_data).await?;
+
+      if (i + 1) % 10 == 0 {
+        info!("Sent {}/{} chunks", i + 1, chunks.len());
+      }
+    }
+
+    // 发送完成消息
+    let complete_msg = TransferMessage::Complete;
+    let complete_data = serde_json::to_vec(&complete_msg)
+      .map_err(|e| crate::Error::Protocol(format!("Serialize failed: {}", e)))?;
+    connection.send(&complete_data).await?;
+
+    connection.close()?;
+    info!("File transfer completed: {}", file_name);
+
     Ok(())
   }
 
   /// 接收文件
-  pub async fn receive_file(&mut self, path: &str) -> Result<()> {
-    // TODO: 实现文件接收
+  pub async fn receive_file(
+    &self,
+    save_path: &str,
+    listener: &tokio::net::TcpListener,
+  ) -> Result<()> {
+    info!("Waiting for file transfer on listener...");
+
+    // 接受连接
+    let mut connection = TcpConnection::accept(listener).await?;
+
+    // 接收开始传输消息
+    let start_data = connection.receive().await?;
+    let start_msg: TransferMessage = serde_json::from_slice(&start_data)
+      .map_err(|e| crate::Error::Protocol(format!("Deserialize failed: {}", e)))?;
+
+    let (file_name, file_size, total_chunks) = match start_msg {
+      TransferMessage::StartTransfer {
+        file_name,
+        file_size,
+        total_chunks,
+      } => (file_name, file_size, total_chunks),
+      _ => {
+        return Err(crate::Error::Protocol(
+          "Expected StartTransfer message".to_string(),
+        ));
+      }
+    };
+
+    info!(
+      "Receiving file: {} ({} bytes, {} chunks)",
+      file_name, file_size, total_chunks
+    );
+
+    // 接收所有分片
+    let mut chunks = Vec::new();
+    let mut received_chunks = 0;
+
+    loop {
+      let chunk_data = connection.receive().await?;
+      let chunk_msg: TransferMessage = serde_json::from_slice(&chunk_data)
+        .map_err(|e| crate::Error::Protocol(format!("Deserialize failed: {}", e)))?;
+
+      match chunk_msg {
+        TransferMessage::Chunk { chunk_id, data } => {
+          chunks.push(FileChunk {
+            chunk_id,
+            data,
+            total_chunks,
+            file_name: file_name.clone(),
+            file_size,
+          });
+          received_chunks += 1;
+
+          if received_chunks % 10 == 0 {
+            info!("Received {}/{} chunks", received_chunks, total_chunks);
+          }
+
+          if received_chunks >= total_chunks {
+            break;
+          }
+        }
+        TransferMessage::Complete => {
+          break;
+        }
+        TransferMessage::Error(err) => {
+          return Err(crate::Error::File(format!("Transfer error: {}", err)));
+        }
+        _ => {
+          warn!("Unexpected message type");
+        }
+      }
+    }
+
+    // 合并分片
+    let file_data = FileChunk::merge_chunks(chunks)?;
+
+    // 保存文件
+    let save_path = Path::new(save_path);
+    if let Some(parent) = save_path.parent() {
+      fs::create_dir_all(parent)
+        .await
+        .map_err(|e| crate::Error::File(format!("Create directory failed: {}", e)))?;
+    }
+
+    fs::write(save_path, &file_data)
+      .await
+      .map_err(|e| crate::Error::File(format!("Write file failed: {}", e)))?;
+
+    connection.close()?;
+    info!("File received and saved: {}", save_path.display());
+
     Ok(())
   }
 }

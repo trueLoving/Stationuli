@@ -2,6 +2,7 @@
 members = [
     "packages/core",
     "apps/desktop/src-tauri",
+    "apps/mobile/src-tauri",
 ]
 resolver = "2"
 
@@ -18,6 +19,9 @@ tokio = { version = "1", features = ["full"] }
 # 网络协议
 quinn = "0.10"
 libmdns = "0.7"
+tokio-util = { version = "0.7", features = ["codec"] }
+bytes = "1"
+hostname = "0.4"
 
 # 加密
 ring = "0.17"

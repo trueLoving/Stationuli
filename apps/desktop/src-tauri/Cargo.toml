@@ -25,3 +25,6 @@ serde_json = { workspace = true }
 # Stationuli 核心库
 stationuli-core = { path = "../../../packages/core" }
 
+# 异步运行时
+tokio = { workspace = true }
+
