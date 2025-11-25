@@ -140,11 +140,12 @@ impl FileTransfer {
   }
 
   /// 接收文件
+  /// 返回接收到的文件路径
   pub async fn receive_file(
     &self,
     save_path: &str,
     listener: &tokio::net::TcpListener,
-  ) -> Result<()> {
+  ) -> Result<String> {
     info!("Waiting for file transfer on listener...");
 
     // 接受连接
@@ -242,6 +243,7 @@ impl FileTransfer {
     connection.close()?;
     info!("File received and saved: {}", final_path.display());
 
-    Ok(())
+    // 返回接收到的文件路径
+    Ok(final_path.to_string_lossy().to_string())
   }
 }

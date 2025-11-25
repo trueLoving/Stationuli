@@ -9,7 +9,11 @@
     "format:rust": "cargo fmt --all",
     "format:rust:check": "cargo fmt --all -- --check",
     "lint": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\" && cargo fmt --all -- --check",
-    "prepare": "husky"
+    "prepare": "husky",
+    "dev:mobile": "pnpm --filter stationuli-mobile tauri android dev",
+    "build:mobile": "pnpm --filter stationuli-mobile tauri android build",
+    "dev:desktop": "pnpm --filter stationuli-desktop tauri  dev",
+    "build:desktop": "pnpm --filter stationuli-desktop tauri build"
   },
   "devDependencies": {
     "husky": "^9.1.7",

@@ -17,6 +17,7 @@ tauri-build = { workspace = true }
 # Tauri
 tauri = { workspace = true }
 tauri-plugin-opener = { workspace = true }
+tauri-plugin-dialog = { workspace = true }
 
 # 序列化
 serde = { workspace = true }

@@ -11,14 +11,20 @@ import { listen } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
 import "./App.css";
 
-const DEFAULT_PORT = 8080;
+const DEFAULT_PORT = 8081; // 移动端端口（与桌面端不同）
+
+type TabType = "transfer" | "control";
 
 function App() {
+  const [activeTab, setActiveTab] = useState<TabType>("transfer");
   const [devices, setDevices] = useState<DeviceInfo[]>([]);
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [deviceId, setDeviceId] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<string>("");
   const [transferProgress, setTransferProgress] = useState<number>(0);
+  const [receivedFiles, setReceivedFiles] = useState<
+    Array<{ name: string; path: string }>
+  >([]);
 
   // 启动设备发现
   const startDiscovery = async () => {
@@ -103,15 +109,15 @@ function App() {
     try {
       setTransferProgress(0);
       await invoke("send_file", {
-        filePath: selectedFile,
-        targetAddress: device.address,
-        targetPort: device.port,
+        file_path: selectedFile,
+        target_address: device.address,
+        target_port: device.port,
       });
-      alert("文件发送成功！");
-      setTransferProgress(100);
+      // 注意：成功消息会在 transfer-complete 事件中处理
     } catch (error) {
       console.error("Failed to send file:", error);
       alert(`文件发送失败: ${error}`);
+      setTransferProgress(0);
     }
   };
 
@@ -122,123 +128,425 @@ function App() {
       setTransferProgress(data.progress);
     });
 
-    const completeUnlisten = listen("transfer-complete", () => {
+    const completeUnlisten = listen("transfer-complete", (event) => {
+      const data = event.payload as { file: string };
       setTransferProgress(100);
+      alert(`文件 "${data.file.split("/").pop()}" 发送成功！`);
+      // 延迟重置进度条
+      setTimeout(() => {
+        setTransferProgress(0);
+      }, 2000);
+    });
+
+    const receivedUnlisten = listen("file-received", (event) => {
+      const data = event.payload as { file_name: string; file_path: string };
+      setReceivedFiles((prev) => [
+        { name: data.file_name, path: data.file_path },
+        ...prev,
+      ]);
+      alert(`文件 "${data.file_name}" 接收成功！`);
     });
 
     return () => {
       progressUnlisten.then((unlisten) => unlisten());
       completeUnlisten.then((unlisten) => unlisten());
+      receivedUnlisten.then((unlisten) => unlisten());
     };
   }, []);
 
-  return (
-    <div className="w-full mx-auto px-5 py-5 font-sans min-h-screen bg-gray-100">
-      <h1 className="text-gray-800 text-center text-2xl font-bold mb-5">
-        Stationuli - 文件传输
-      </h1>
+  // 文件传输页面内容
+  const TransferTab = () => (
+    <div className="pb-24">
+      {/* 头部 */}
+      <div className="text-center mb-6 pt-4">
+        <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mb-3 shadow-lg">
+          <span className="text-2xl">📡</span>
+        </div>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-1">
+          Stationuli
+        </h1>
+        <p className="text-gray-600 text-base">快速、安全的文件传输</p>
+      </div>
 
-      <div className="my-5 p-5 bg-white rounded-lg shadow-sm">
-        <h2 className="mt-0 text-gray-800 text-lg font-semibold mb-4">
-          设备发现
-        </h2>
-        <div className="flex flex-col gap-2.5 mb-4">
+      {/* 设备发现卡片 */}
+      <div className="bg-white rounded-2xl shadow-lg p-5 mb-4 border border-gray-100">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <span className="text-xl">🔍</span>
+            设备发现
+          </h2>
+          {isDiscovering && (
+            <div className="flex items-center gap-2 text-green-600">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-xs font-medium">发现中</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-3 mb-5">
           {!isDiscovering ? (
             <button
               onClick={startDiscovery}
-              className="px-5 py-3 bg-blue-600 text-white border-none rounded-md cursor-pointer text-base font-medium transition-colors active:bg-blue-700"
+              className="w-full px-5 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 text-base"
             >
+              <span>▶</span>
               启动设备发现
             </button>
           ) : (
             <button
               onClick={stopDiscovery}
-              className="px-5 py-3 bg-blue-600 text-white border-none rounded-md cursor-pointer text-base font-medium transition-colors active:bg-blue-700"
+              className="w-full px-5 py-4 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 text-base"
             >
+              <span>⏹</span>
               停止设备发现
             </button>
           )}
           <button
             onClick={addDevice}
-            className="px-5 py-3 bg-blue-600 text-white border-none rounded-md cursor-pointer text-base font-medium transition-colors active:bg-blue-700"
+            className="w-full px-5 py-4 bg-gray-100 text-gray-700 rounded-xl font-semibold shadow-sm active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 text-base"
           >
+            <span>➕</span>
             手动添加设备
           </button>
         </div>
 
         {deviceId && (
-          <p className="p-2.5 bg-blue-50 rounded font-mono text-xs my-2.5">
-            本设备 ID: {deviceId}
-          </p>
+          <div className="mb-5 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+            <p className="text-xs text-gray-600 mb-1">本设备 ID</p>
+            <p className="font-mono text-xs font-semibold text-gray-800 break-all">
+              {deviceId}
+            </p>
+          </div>
         )}
 
         <div>
-          <h3 className="mt-0 text-gray-600 text-base font-medium mb-3">
-            发现的设备 ({devices.length})
+          <h3 className="text-base font-semibold mb-3 text-gray-700 flex items-center gap-2">
+            <span>📱</span>
+            发现的设备
+            <span className="ml-1 px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+              {devices.length}
+            </span>
           </h3>
           {devices.length === 0 ? (
-            <p className="text-gray-600">
-              暂无设备，请确保设备在同一 WiFi 网络下
-            </p>
+            <div className="text-center py-8">
+              <div className="text-5xl mb-3">🔍</div>
+              <p className="text-gray-500 text-base mb-1">暂无设备</p>
+              <p className="text-gray-400 text-sm">
+                请确保设备在同一 WiFi 网络下
+              </p>
+            </div>
           ) : (
-            <ul className="list-none p-0 m-0">
+            <div className="space-y-3">
               {devices.map((device) => (
-                <li
+                <div
                   key={device.id}
-                  className="flex justify-between items-center p-4 my-2.5 bg-gray-50 rounded-md shadow-sm"
+                  className="p-4 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl border border-gray-200 active:scale-98 transition-all duration-150"
                 >
-                  <div className="flex-1">
-                    <strong className="text-gray-800 block mb-1">
-                      {device.name}
-                    </strong>
-                    <span className="text-gray-600 text-xs">
-                      {device.address}:{device.port} ({device.device_type})
-                    </span>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl flex items-center justify-center text-xl shadow-sm flex-shrink-0">
+                      {device.device_type === "mobile" ? "📱" : "💻"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-800 text-sm mb-1 truncate">
+                        {device.name}
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-gray-600 flex items-center gap-1">
+                          <span>🌐</span>
+                          {device.address}:{device.port}
+                        </span>
+                        <span className="px-2 py-0.5 bg-gray-200 rounded text-xs">
+                          {device.device_type}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <button
                     onClick={() => sendFile(device)}
-                    className="px-5 py-3 bg-blue-600 text-white border-none rounded-md cursor-pointer text-sm font-medium transition-colors active:bg-blue-700 ml-2"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 text-sm"
                   >
+                    <span>📤</span>
                     发送文件
                   </button>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </div>
       </div>
 
-      <div className="my-5 p-5 bg-white rounded-lg shadow-sm">
-        <h2 className="mt-0 text-gray-800 text-lg font-semibold mb-4">
+      {/* 文件选择卡片 */}
+      <div className="bg-white rounded-2xl shadow-lg p-5 mb-4 border border-gray-100">
+        <h2 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
+          <span className="text-xl">📁</span>
           文件选择
         </h2>
-        <div className="my-4">
+        <div className="mb-5">
           <button
             onClick={selectFile}
-            className="px-5 py-3 bg-blue-600 text-white border-none rounded-md cursor-pointer text-base font-medium transition-colors active:bg-blue-700"
+            className="w-full px-5 py-4 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 text-base"
           >
+            <span>📂</span>
             选择文件
           </button>
           {selectedFile && (
-            <p className="mt-2.5 p-2.5 bg-blue-50 rounded font-mono text-sm break-all">
-              已选择: {selectedFile.split("/").pop()}
-            </p>
+            <div className="mt-4 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100">
+              <p className="text-xs text-gray-600 mb-1">已选择文件</p>
+              <p className="font-mono text-xs font-semibold text-gray-800 break-all">
+                {selectedFile.split("/").pop()}
+              </p>
+            </div>
           )}
         </div>
 
         {transferProgress > 0 && transferProgress < 100 && (
-          <div className="mt-4">
-            <div className="w-full h-6 bg-gray-300 rounded-full overflow-hidden mb-2">
-              <div
-                className="h-full bg-green-600 transition-all duration-300 flex items-center justify-center text-white text-xs font-medium"
-                style={{ width: `${transferProgress}%` }}
-              />
+          <div className="mt-5 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-gray-700">
+                传输进度
+              </span>
+              <span className="text-xs font-bold text-green-600">
+                {transferProgress}%
+              </span>
             </div>
-            <span className="block text-center text-sm text-gray-600">
-              {transferProgress}%
-            </span>
+            <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+              <div
+                className="h-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-300 ease-out flex items-center justify-end pr-1.5"
+                style={{ width: `${transferProgress}%` }}
+              >
+                {transferProgress > 15 && (
+                  <span className="text-[10px] text-white font-medium">
+                    {transferProgress}%
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
         )}
+      </div>
+
+      {/* 接收的文件卡片 */}
+      <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
+        <h2 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
+          <span className="text-xl">📥</span>
+          接收的文件
+          {receivedFiles.length > 0 && (
+            <span className="ml-1 px-2.5 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+              {receivedFiles.length}
+            </span>
+          )}
+        </h2>
+        {receivedFiles.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-5xl mb-3">📭</div>
+            <p className="text-gray-500 text-base">暂无接收的文件</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {receivedFiles.map((file, index) => (
+              <div
+                key={index}
+                className="p-4 bg-gradient-to-r from-gray-50 to-green-50 rounded-xl border border-gray-200 active:scale-98 transition-all duration-150"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center text-xl shadow-sm flex-shrink-0">
+                    📄
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-gray-800 text-sm mb-1 truncate">
+                      {file.name}
+                    </div>
+                    <div className="text-xs text-gray-600 truncate">
+                      {file.path}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // 设备控制页面内容
+  const ControlTab = () => (
+    <div className="pb-24">
+      {/* 头部 */}
+      <div className="text-center mb-6 pt-4">
+        <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl mb-3 shadow-lg">
+          <span className="text-2xl">⚙️</span>
+        </div>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-1">
+          设备控制
+        </h1>
+        <p className="text-gray-600 text-base">管理设备连接和设置</p>
+      </div>
+
+      {/* 设备状态卡片 */}
+      <div className="bg-white rounded-2xl shadow-lg p-5 mb-4 border border-gray-100">
+        <h2 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
+          <span className="text-xl">📊</span>
+          设备状态
+        </h2>
+        <div className="space-y-4">
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">发现服务</span>
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  isDiscovering
+                    ? "bg-green-100 text-green-700"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {isDiscovering ? "运行中" : "已停止"}
+              </span>
+            </div>
+            {deviceId && (
+              <div className="mt-3 pt-3 border-t border-blue-200">
+                <p className="text-xs text-gray-600 mb-1">设备 ID</p>
+                <p className="font-mono text-xs font-semibold text-gray-800 break-all">
+                  {deviceId}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">已发现设备</span>
+              <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                {devices.length} 个
+              </span>
+            </div>
+          </div>
+
+          <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">接收的文件</span>
+              <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">
+                {receivedFiles.length} 个
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 设备列表卡片 */}
+      <div className="bg-white rounded-2xl shadow-lg p-5 mb-4 border border-gray-100">
+        <h2 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
+          <span className="text-xl">📱</span>
+          设备列表
+          <span className="ml-1 px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+            {devices.length}
+          </span>
+        </h2>
+        {devices.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-5xl mb-3">📭</div>
+            <p className="text-gray-500 text-base mb-1">暂无设备</p>
+            <p className="text-gray-400 text-sm">
+              启动设备发现以查找附近的设备
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {devices.map((device) => (
+              <div
+                key={device.id}
+                className="p-4 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl border border-gray-200"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl flex items-center justify-center text-2xl shadow-sm flex-shrink-0">
+                    {device.device_type === "mobile" ? "📱" : "💻"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-gray-800 text-sm mb-1 truncate">
+                      {device.name}
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs text-gray-600 flex items-center gap-1">
+                        <span>🌐</span>
+                        {device.address}:{device.port}
+                      </span>
+                      <span className="px-2 py-0.5 bg-gray-200 rounded text-xs">
+                        {device.device_type}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 操作按钮 */}
+      <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
+        <h2 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
+          <span className="text-xl">🔧</span>
+          操作
+        </h2>
+        <div className="space-y-3">
+          <button
+            onClick={isDiscovering ? stopDiscovery : startDiscovery}
+            className={`w-full px-5 py-4 rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 text-base ${
+              isDiscovering
+                ? "bg-gradient-to-r from-red-500 to-pink-600 text-white"
+                : "bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
+            }`}
+          >
+            <span>{isDiscovering ? "⏹" : "▶"}</span>
+            {isDiscovering ? "停止设备发现" : "启动设备发现"}
+          </button>
+          <button
+            onClick={addDevice}
+            className="w-full px-5 py-4 bg-gray-100 text-gray-700 rounded-xl font-semibold shadow-sm active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 text-base"
+          >
+            <span>➕</span>
+            手动添加设备
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="w-full mx-auto font-sans min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 relative">
+      {/* 内容区域 */}
+      <div className="px-4 py-6 overflow-y-auto pb-24">
+        {activeTab === "transfer" ? <TransferTab /> : <ControlTab />}
+      </div>
+
+      {/* 底部导航栏 */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 safe-area-inset-bottom">
+        <div className="flex items-center justify-around h-16">
+          <button
+            onClick={() => setActiveTab("transfer")}
+            className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 relative ${
+              activeTab === "transfer" ? "text-blue-600" : "text-gray-500"
+            }`}
+          >
+            <span className="text-2xl mb-1">📤</span>
+            <span className="text-xs font-medium">文件传输</span>
+            {activeTab === "transfer" && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full"></div>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("control")}
+            className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 relative ${
+              activeTab === "control" ? "text-purple-600" : "text-gray-500"
+            }`}
+          >
+            <span className="text-2xl mb-1">⚙️</span>
+            <span className="text-xs font-medium">设备控制</span>
+            {activeTab === "control" && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600 rounded-t-full"></div>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -21,23 +21,24 @@ async fn start_discovery(
   app: tauri::AppHandle,
 ) -> Result<String, String> {
   let mut discovery = MdnsDiscovery::new(port);
+  discovery.set_device_type("mobile".to_string());
   discovery
     .start()
     .await
     .map_err(|e| format!("Failed to start discovery: {}", e))?;
 
-  *state.discovery.write().await = Some(discovery);
+  *state.inner().discovery.write().await = Some(discovery);
 
   // 启动 TCP 服务器监听文件接收
   let listener = TcpConnection::listen(port)
     .await
     .map_err(|e| format!("Failed to start TCP listener: {}", e))?;
 
-  *state.tcp_listener.write().await = Some(listener);
+  *state.inner().tcp_listener.write().await = Some(listener);
 
   // 启动文件接收任务
-  let listener_clone = state.tcp_listener.clone();
-  let transfer_clone = state.file_transfer.clone();
+  let listener_clone = state.inner().tcp_listener.clone();
+  let transfer_clone = state.inner().file_transfer.clone();
   let app_clone = app.clone();
 
   tokio::spawn(async move {
@@ -59,7 +60,7 @@ async fn start_discovery(
         }
 
         // receive_file 现在可以接受目录路径，会自动使用接收到的文件名
-        if let Err(e) = transfer
+        match transfer
           .receive_file(
             save_dir
               .to_str()
@@ -68,7 +69,24 @@ async fn start_discovery(
           )
           .await
         {
-          eprintln!("File receive error: {}", e);
+          Ok(file_path) => {
+            // 文件接收成功，发送事件通知前端
+            let file_name = std::path::Path::new(&file_path)
+              .file_name()
+              .and_then(|n| n.to_str())
+              .unwrap_or("unknown")
+              .to_string();
+            let _ = app_clone.emit(
+              "file-received",
+              serde_json::json!({
+                "file_path": file_path,
+                "file_name": file_name
+              }),
+            );
+          }
+          Err(e) => {
+            eprintln!("File receive error: {}", e);
+          }
         }
       }
       tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
@@ -80,7 +98,7 @@ async fn start_discovery(
 
 #[tauri::command]
 async fn stop_discovery(state: tauri::State<'_, AppState>) -> Result<(), String> {
-  if let Some(mut discovery) = state.discovery.write().await.take() {
+  if let Some(mut discovery) = state.inner().discovery.write().await.take() {
     discovery
       .stop()
       .map_err(|e| format!("Failed to stop: {}", e))?;
@@ -90,7 +108,7 @@ async fn stop_discovery(state: tauri::State<'_, AppState>) -> Result<(), String>
 
 #[tauri::command]
 async fn get_devices(state: tauri::State<'_, AppState>) -> Result<Vec<DeviceInfo>, String> {
-  if let Some(ref discovery) = *state.discovery.read().await {
+  if let Some(ref discovery) = *state.inner().discovery.read().await {
     Ok(discovery.get_devices().await)
   } else {
     Ok(vec![])
@@ -99,7 +117,7 @@ async fn get_devices(state: tauri::State<'_, AppState>) -> Result<Vec<DeviceInfo
 
 #[tauri::command]
 async fn add_device(device: DeviceInfo, state: tauri::State<'_, AppState>) -> Result<(), String> {
-  if let Some(ref discovery) = *state.discovery.read().await {
+  if let Some(ref discovery) = *state.inner().discovery.read().await {
     discovery.add_device(device).await;
     Ok(())
   } else {
@@ -115,7 +133,7 @@ async fn send_file(
   state: tauri::State<'_, AppState>,
   app: tauri::AppHandle,
 ) -> Result<String, String> {
-  let transfer = state.file_transfer.read().await;
+  let transfer = state.inner().file_transfer.read().await;
   let app_clone = app.clone();
   let file_path_clone = file_path.clone();
 
@@ -125,7 +143,7 @@ async fn send_file(
       &file_path,
       &target_address,
       target_port,
-      Some(move |sent_bytes, total_bytes| {
+      Some(Box::new(move |sent_bytes, total_bytes| {
         let progress = if total_bytes > 0 {
           (sent_bytes * 100 / total_bytes) as u32
         } else {
@@ -142,7 +160,7 @@ async fn send_file(
             }),
           )
           .ok();
-      }),
+      })),
     )
     .await
     .map_err(|e| format!("Failed to send file: {}", e))?;
@@ -161,7 +179,7 @@ async fn send_file(
 
 #[tauri::command]
 async fn get_device_id(state: tauri::State<'_, AppState>) -> Result<String, String> {
-  if let Some(ref discovery) = *state.discovery.read().await {
+  if let Some(ref discovery) = *state.inner().discovery.read().await {
     Ok(discovery.device_id().to_string())
   } else {
     Err("Discovery not started".to_string())

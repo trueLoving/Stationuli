@@ -14,6 +14,7 @@ tokio = { workspace = true }
 # 网络协议
 quinn = { workspace = true }
 libmdns = { workspace = true }
+hostname = { workspace = true }
 
 # 加密
 ring = { workspace = true }
