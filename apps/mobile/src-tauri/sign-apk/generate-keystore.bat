@@ -70,12 +70,15 @@ if %ERRORLEVEL% EQU 0 (
     echo    cd apps\mobile
     echo    pnpm tauri android build
     echo.
-    echo 2. 运行签名配置脚本（需要 Git Bash 或 WSL）：
+    echo 2. 创建签名配置文件：
     echo    cd apps\mobile\src-tauri
-    echo    bash sign-apk\setup-android-signing.sh
+    echo    copy sign-apk\keystore.properties.example sign-apk\keystore.properties
     echo.
-    echo 3. 编辑 gen\android\keystore.properties，填入密钥库信息：
+    echo 3. 编辑 sign-apk\keystore.properties，填入密钥库信息：
     echo    storeFile=%KEYSTORE_PATH%
+    echo.
+    echo 4. 运行签名配置脚本（需要 Git Bash 或 WSL）：
+    echo    bash sign-apk\setup-android-signing.sh
     echo.
     echo ⚠️  重要提示：
     echo    - 请妥善保管密钥库文件和密码

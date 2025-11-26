@@ -1,7 +1,13 @@
 #!/bin/bash
 
 # Android 签名自动配置脚本
-# 此脚本会自动配置 Android 应用的签名设置
+# 
+# 工作流程：
+# 1. 从 sign-apk/keystore.properties 读取配置
+# 2. 复制到 gen/android/keystore.properties
+# 3. 配置 build.gradle.kts 添加签名设置
+#
+# 这样即使删除 gen 目录，重新构建后运行此脚本即可恢复签名配置
 
 set -e
 
@@ -9,7 +15,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TAURI_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 GEN_DIR="$TAURI_DIR/gen/android"
 BUILD_GRADLE="$GEN_DIR/app/build.gradle.kts"
-KEYSTORE_PROPERTIES="$GEN_DIR/keystore.properties"
+KEYSTORE_PROPERTIES_SOURCE="$SCRIPT_DIR/keystore.properties"
+KEYSTORE_PROPERTIES_TARGET="$GEN_DIR/keystore.properties"
 KEYSTORE_PROPERTIES_EXAMPLE="$SCRIPT_DIR/keystore.properties.example"
 
 echo "=========================================="
@@ -37,34 +44,24 @@ if [ ! -f "$BUILD_GRADLE" ]; then
     exit 1
 fi
 
-# 检查是否已经配置了签名
-if grep -q "signingConfigs" "$BUILD_GRADLE"; then
-    echo "✅ 签名配置已存在"
+# 检查 sign-apk/keystore.properties 是否存在
+if [ ! -f "$KEYSTORE_PROPERTIES_SOURCE" ]; then
+    echo "❌ 错误: 未找到 sign-apk/keystore.properties"
     echo ""
-    read -p "是否要重新配置? (y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "已取消操作。"
-        exit 0
-    fi
-    echo "正在移除现有配置..."
-    # 这里可以添加移除逻辑，但为了安全，建议手动检查
+    echo "请按照以下步骤操作："
+    echo "1. 复制 keystore.properties.example 为 keystore.properties："
+    echo "   cp sign-apk/keystore.properties.example sign-apk/keystore.properties"
+    echo ""
+    echo "2. 编辑 sign-apk/keystore.properties，填入您的密钥库信息"
+    echo ""
+    echo "3. 重新运行此脚本"
+    exit 1
 fi
 
-# 检查并创建 keystore.properties
-if [ ! -f "$KEYSTORE_PROPERTIES" ]; then
-    if [ -f "$KEYSTORE_PROPERTIES_EXAMPLE" ]; then
-        echo "📋 复制 keystore.properties.example 到 gen/android/keystore.properties"
-        cp "$KEYSTORE_PROPERTIES_EXAMPLE" "$KEYSTORE_PROPERTIES"
-        echo "⚠️  请编辑 gen/android/keystore.properties 并填入您的密钥库信息"
-        echo ""
-    else
-        echo "❌ 错误: 未找到 keystore.properties.example"
-        exit 1
-    fi
-else
-    echo "✅ keystore.properties 已存在"
-fi
+# 复制 keystore.properties 到 gen/android/
+echo "📋 复制签名配置到 gen/android/keystore.properties..."
+cp "$KEYSTORE_PROPERTIES_SOURCE" "$KEYSTORE_PROPERTIES_TARGET"
+echo "✅ 已复制签名配置"
 
 # 检查 build.gradle.kts 是否已经包含必要的导入
 if ! grep -q "import java.util.Properties" "$BUILD_GRADLE"; then
@@ -101,6 +98,7 @@ if ! grep -q "signingConfigs {" "$BUILD_GRADLE"; then
         }\\
     }\\
 " "$BUILD_GRADLE"
+    echo "✅ 已添加签名配置"
 else
     echo "✅ signingConfigs 已存在"
 fi
@@ -113,6 +111,7 @@ if grep -q 'getByName("release")' "$BUILD_GRADLE"; then
         sed -i.bak '/getByName("release") {/a\
             signingConfig = signingConfigs.getByName("release")
 ' "$BUILD_GRADLE"
+        echo "✅ 已配置 release buildType"
     else
         echo "✅ release buildType 已配置签名"
     fi
@@ -124,6 +123,7 @@ else
             signingConfig = signingConfigs.getByName("release")\
         }
 ' "$BUILD_GRADLE"
+    echo "✅ 已添加 release buildType"
 fi
 
 # 清理备份文件
@@ -132,7 +132,14 @@ rm -f "$BUILD_GRADLE.bak"
 echo ""
 echo "✅ Android 签名配置完成!"
 echo ""
-echo "下一步："
-echo "1. 编辑 gen/android/keystore.properties，填入您的密钥库信息"
-echo "2. 运行构建: cd apps/mobile && pnpm tauri android build"
+echo "📋 配置说明："
+echo "  - 签名配置已从 sign-apk/keystore.properties 复制到 gen/android/keystore.properties"
+echo "  - build.gradle.kts 已配置签名设置"
+echo ""
+echo "🚀 下一步："
+echo "  运行构建: cd apps/mobile && pnpm tauri android build"
+echo ""
+echo "💡 提示："
+echo "  - 即使删除 gen 目录，重新构建后运行此脚本即可恢复签名配置"
+echo "  - 签名配置保存在 sign-apk/keystore.properties，不会被删除"
 echo ""

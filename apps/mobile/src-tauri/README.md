@@ -46,16 +46,22 @@ pnpm tauri android build
    pnpm tauri android build
    ```
 
-3. 配置签名：
+3. 创建签名配置文件：
 
    ```bash
    cd apps/mobile/src-tauri
+   cp sign-apk/keystore.properties.example sign-apk/keystore.properties
+   ```
+
+4. 编辑 `sign-apk/keystore.properties`，填入密钥库信息
+
+5. 配置签名：
+
+   ```bash
    ./sign-apk/setup-android-signing.sh
    ```
 
-4. 编辑 `gen/android/keystore.properties`，填入密钥库信息
-
-5. 重新构建
+6. 重新构建
 
 详细说明请查看 [sign-apk/README.md](./sign-apk/README.md)。
 

@@ -10,3 +10,4 @@
 /gen/android/keystore.properties
 *.jks
 *.keystore
+/sign-apk/keystore.properties

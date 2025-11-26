@@ -40,22 +40,18 @@ pnpm tauri android build
 
 首次构建会生成 `gen/android/` 目录和 Android 项目文件。
 
-### 步骤 3: 自动配置签名（推荐）
+### 步骤 3: 创建签名配置文件
+
+复制 `keystore.properties.example` 为 `keystore.properties`：
 
 ```bash
 cd apps/mobile/src-tauri
-chmod +x sign-apk/setup-android-signing.sh
-./sign-apk/setup-android-signing.sh
+cp sign-apk/keystore.properties.example sign-apk/keystore.properties
 ```
-
-此脚本会自动：
-
-- 复制 `keystore.properties.example` 到 `gen/android/keystore.properties`
-- 配置 `gen/android/app/build.gradle.kts` 添加签名设置
 
 ### 步骤 4: 编辑密钥库配置
 
-编辑 `gen/android/keystore.properties`，填入您的密钥库信息：
+编辑 `sign-apk/keystore.properties`，填入您的密钥库信息：
 
 ```properties
 storePassword=你的密钥库密码
@@ -70,7 +66,22 @@ storeFile=/Users/你的用户名/upload-keystore.jks
 storeFile=C:\\Users\\你的用户名\\upload-keystore.jks
 ```
 
-### 步骤 5: 重新构建
+### 步骤 5: 配置签名
+
+运行签名配置脚本：
+
+```bash
+cd apps/mobile/src-tauri
+chmod +x sign-apk/setup-android-signing.sh
+./sign-apk/setup-android-signing.sh
+```
+
+此脚本会自动：
+
+- 将 `sign-apk/keystore.properties` 复制到 `gen/android/keystore.properties`
+- 配置 `gen/android/app/build.gradle.kts` 添加签名设置
+
+### 步骤 6: 重新构建
 
 ```bash
 cd apps/mobile
@@ -79,17 +90,37 @@ pnpm tauri android build
 
 现在构建的 APK 将自动使用您的密钥库进行签名。
 
+## 🔄 重新生成 gen 目录后的签名恢复
+
+如果删除了 `gen` 目录，重新构建后只需运行签名配置脚本即可恢复签名：
+
+```bash
+# 重新构建（会重新生成 gen 目录）
+cd apps/mobile
+pnpm tauri android build
+
+# 恢复签名配置
+cd src-tauri
+./sign-apk/setup-android-signing.sh
+```
+
+**优势：**
+
+- 签名配置保存在 `sign-apk/keystore.properties`，不会被删除
+- 重新构建后只需运行一个脚本即可恢复签名配置
+- 无需手动备份和恢复
+
 ## 📝 手动配置（高级）
 
 如果您需要手动配置，请参考以下步骤：
 
-1. **复制配置文件**：
+1. **创建签名配置文件**：
 
    ```bash
-   cp sign-apk/keystore.properties.example gen/android/keystore.properties
+   cp sign-apk/keystore.properties.example sign-apk/keystore.properties
    ```
 
-2. **编辑 `gen/android/keystore.properties`**（同上）
+2. **编辑 `sign-apk/keystore.properties`**，填入密钥库信息
 
 3. **修改 `gen/android/app/build.gradle.kts`**：
 
@@ -136,9 +167,10 @@ apps/mobile/src-tauri/
 │   ├── generate-keystore.sh       # 生成密钥库脚本 (macOS/Linux)
 │   ├── generate-keystore.bat      # 生成密钥库脚本 (Windows)
 │   ├── setup-android-signing.sh   # 自动配置签名脚本
-│   └── keystore.properties.example # 密钥库配置模板
+│   ├── keystore.properties.example # 密钥库配置模板
+│   └── keystore.properties        # 密钥库配置（用户创建，不要提交）
 └── gen/android/                   # 构建时生成
-    ├── keystore.properties        # 密钥库配置（不要提交）
+    ├── keystore.properties        # 从 sign-apk/ 复制（不要提交）
     └── app/
         └── build.gradle.kts       # 构建配置（已自动配置签名）
 ```
@@ -171,15 +203,22 @@ sign-apk\generate-keystore.bat
 
 **功能：**
 
-- 检查 `gen/android/` 目录是否存在
-- 复制 `sign-apk/keystore.properties.example` 到 `gen/android/keystore.properties`
+- 检查 `sign-apk/keystore.properties` 是否存在
+- 将 `sign-apk/keystore.properties` 复制到 `gen/android/keystore.properties`
 - 自动修改 `build.gradle.kts` 添加签名配置
+- 即使删除 gen 目录，重新构建后运行此脚本即可恢复签名配置
 
 **使用方法：**
 
 ```bash
 ./sign-apk/setup-android-signing.sh
 ```
+
+**工作流程：**
+
+1. 从 `sign-apk/keystore.properties` 读取配置（需要先创建并填写）
+2. 复制到 `gen/android/keystore.properties`
+3. 配置 `build.gradle.kts` 添加签名设置
 
 ## 🔐 安全提示
 
@@ -231,10 +270,12 @@ sign-apk\generate-keystore.bat
 
 **A:** 确保：
 
-1. 已运行首次构建生成 `gen/android/` 目录
-2. 已运行 `setup-android-signing.sh` 脚本，或手动复制了 `sign-apk/keystore.properties.example` 到 `gen/android/keystore.properties`
-3. 文件中的路径和密码正确
-4. 密钥库文件路径正确（使用绝对路径）
+1. 已创建 `sign-apk/keystore.properties` 文件（从 `keystore.properties.example` 复制）
+2. 已编辑 `sign-apk/keystore.properties` 填入正确的密钥库信息
+3. 已运行首次构建生成 `gen/android/` 目录
+4. 已运行 `setup-android-signing.sh` 脚本
+5. 文件中的路径和密码正确
+6. 密钥库文件路径正确（使用绝对路径）
 
 ### Q: APK 仍然无法安装？
 
@@ -276,3 +317,30 @@ keytool -storepasswd -keystore ~/upload-keystore.jks
 ### Q: 密钥库文件可以移动吗？
 
 **A:** 可以，只需更新 `keystore.properties` 中的 `storeFile` 路径即可。建议使用绝对路径。
+
+### Q: 删除 gen 目录后签名配置会丢失吗？
+
+**A:** 不会！签名配置保存在 `sign-apk/keystore.properties`，不会被删除。
+
+**恢复签名配置：**
+
+```bash
+# 重新构建（会重新生成 gen 目录）
+cd apps/mobile
+pnpm tauri android build
+
+# 恢复签名配置（只需运行一个脚本）
+cd src-tauri
+./sign-apk/setup-android-signing.sh
+```
+
+脚本会自动：
+
+- 从 `sign-apk/keystore.properties` 复制配置到 `gen/android/keystore.properties`
+- 重新配置 `build.gradle.kts` 添加签名设置
+
+**优势：**
+
+- 签名配置永久保存在 `sign-apk/` 目录
+- 重新构建后只需运行一个脚本即可恢复
+- 无需手动备份和恢复
