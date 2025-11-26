@@ -1,18 +1,7 @@
 name: Build Mobile
 
+# 仅支持手动触发
 on:
-  push:
-    branches: [main, develop]
-    paths:
-      - 'apps/mobile/**'
-      - 'packages/**'
-      - '.github/workflows/build-mobile.yml'
-  pull_request:
-    branches: [main, develop]
-    paths:
-      - 'apps/mobile/**'
-      - 'packages/**'
-      - '.github/workflows/build-mobile.yml'
   workflow_dispatch:
 
 jobs:
@@ -92,7 +81,7 @@ jobs:
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
 
       - name: Upload APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: android-apk
           path: apps/mobile/src-tauri/target/android/**/*.apk
@@ -107,7 +96,7 @@ jobs:
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
 
       - name: Upload AAB
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: android-aab
           path: apps/mobile/src-tauri/target/android/**/*.aab

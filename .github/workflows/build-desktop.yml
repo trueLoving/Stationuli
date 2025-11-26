@@ -1,18 +1,7 @@
 name: Build Desktop
 
+# 仅支持手动触发
 on:
-  push:
-    branches: [main, develop]
-    paths:
-      - 'apps/desktop/**'
-      - 'packages/**'
-      - '.github/workflows/build-desktop.yml'
-  pull_request:
-    branches: [main, develop]
-    paths:
-      - 'apps/desktop/**'
-      - 'packages/**'
-      - '.github/workflows/build-desktop.yml'
   workflow_dispatch:
 
 jobs:
@@ -79,7 +68,7 @@ jobs:
           pnpm tauri build --target ${{ matrix.target }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: desktop-${{ matrix.os }}-${{ matrix.target }}
           path: |

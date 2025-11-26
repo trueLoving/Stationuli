@@ -1,9 +1,8 @@
 name: Release
 
+# 仅支持手动触发
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
 
 jobs:
   release-desktop:
