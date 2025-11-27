@@ -2,8 +2,7 @@
 
 # Stationuli —— 个人工作站P2P文件传输与控制解决方案
 
-[![License: Personal Use Free](https://img.shields.io/badge/License-Personal%20Use%20Free-green.svg)](./LICENSE)
-[![License: Commercial Paid](https://img.shields.io/badge/License-Commercial%20Paid-blue.svg)](./LICENSE)
+[![License: BSL 1.1](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](https://mariadb.com/bsl11/)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/trueLoving/Stationuli)
 [![pnpm](https://img.shields.io/badge/pnpm-10.18.3-orange.svg)](https://pnpm.io/)
 [![Rust](https://img.shields.io/badge/rust-2024-orange.svg)](https://www.rust-lang.org/)
@@ -59,9 +58,12 @@ Stationuli 是一个**完全自主、完全离线、完全私有**的个人工�
 
 ## 📄 许可证
 
-**个人使用**：个人非商业用途免费使用。
+本项目采用 **Business Source License (BSL) 1.1** 许可证。
 
-**商业使用**：商业使用需要许可证。商业许可咨询请联系作者。
+- **个人/非生产环境使用**：个人使用、开发、测试、教育和研究免费
+- **小企业使用**：员工少于 5 人或年收入低于 10 万美元的组织可免费使用
+- **商业使用**：生产环境的商业使用需要许可证。商业许可咨询请联系作者
+- **转换日期**：2029-01-01 后，本软件将转换为 GPL v2.0 或更高版本
 
 详见 [LICENSE](./LICENSE) 文件。
 

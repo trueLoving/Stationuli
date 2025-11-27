@@ -2,8 +2,7 @@ English | [中文](./README.zh-CN.md)
 
 # Stationuli —— Personal Workstation P2P File Transfer & Control Solution
 
-[![License: Personal Use Free](https://img.shields.io/badge/License-Personal%20Use%20Free-green.svg)](./LICENSE)
-[![License: Commercial Paid](https://img.shields.io/badge/License-Commercial%20Paid-blue.svg)](./LICENSE)
+[![License: BSL 1.1](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](https://mariadb.com/bsl11/)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/trueLoving/Stationuli)
 [![pnpm](https://img.shields.io/badge/pnpm-10.18.3-orange.svg)](https://pnpm.io/)
 [![Rust](https://img.shields.io/badge/rust-2024-orange.svg)](https://www.rust-lang.org/)
@@ -59,11 +58,14 @@ Pure P2P cross-platform file transfer and control tool:
 
 ## 📄 License
 
-**Personal Use**: Free for personal, non-commercial use.
+This project is licensed under the **Business Source License (BSL) 1.1**.
 
-**Commercial Use**: Commercial use requires a license. Please contact the author for commercial licensing inquiries.
+- **Personal/Non-Production Use**: Free for personal use, development, testing, education, and research
+- **Small Business Use**: Free for organizations with fewer than 5 employees or annual revenue less than $100,000 USD
+- **Commercial Use**: Commercial use in production requires a license. Please contact the author for commercial licensing inquiries
+- **Change Date**: On 2029-01-01, this software will convert to GPL v2.0 or later
 
-See [LICENSE](./LICENSE) file for details.
+See [LICENSE](./LICENSE) file for full details.
 
 ---
 

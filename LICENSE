@@ -1,34 +1,97 @@
-Stationuli License
+Business Source License 1.1
 
 Copyright (c) 2025 trueLoving
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to use,
-copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-the Software for PERSONAL USE ONLY, subject to the following conditions:
+This Source Code Form is subject to the terms of the Business Source License
+v1.1. If a copy of the BSL was not distributed with this file, you can obtain
+one at https://mariadb.com/bsl11/.
 
-1. PERSONAL USE: The Software may be used, copied, modified, and distributed
-   for personal, non-commercial purposes without any restrictions.
+Change Date: 2029-01-01
 
-2. COMMERCIAL USE: Any use of the Software for commercial purposes, including
-   but not limited to:
-   - Use in a business, organization, or commercial entity
-   - Use for generating revenue or profit
-   - Use as part of a commercial product or service
-   - Use in a commercial environment or workplace
-   
-   Requires explicit written permission from the copyright holder and may
-   be subject to licensing fees.
+Change License: GNU General Public License v2.0 or later
 
-3. The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software for personal use.
+On the date above, in accordance with the Business Source License, use of this
+software will be governed by the open source license specified in the Change
+License above.
 
-4. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-   THE SOFTWARE.
+---
+
+Business Source License 1.1
+
+Terms
+
+The Licensor hereby grants you the right to copy, modify, create derivative
+works, redistribute, and use non-production the Software (as defined below),
+subject to the conditions set forth below.
+
+For the avoidance of doubt, you may do the following with the Software:
+
+1. Use the Software for non-production purposes, including but not limited to:
+   - Personal use
+   - Development and testing
+   - Educational purposes
+   - Research and evaluation
+
+2. Modify the Software and create derivative works based on the Software
+
+3. Distribute the Software and derivative works, subject to the restrictions
+   below
+
+You may NOT do the following with the Software:
+
+1. Use the Software in a production environment for commercial purposes
+2. Offer the Software as a hosted or managed service
+3. Use the Software to provide services to third parties for a fee
+4. Use the Software in any way that generates revenue or profit
+
+For commercial use, you must obtain a separate commercial license from the
+copyright holder.
+
+Additional Use Grant
+
+Notwithstanding the foregoing, you may use the Software in production for
+commercial purposes if you meet the following conditions:
+
+- Your organization has fewer than 5 employees, OR
+- Your annual revenue is less than $100,000 USD
+
+If you meet these conditions, you may use the Software in production without
+a commercial license. If you exceed these limits, you must obtain a commercial
+license.
+
+Change Date
+
+The Change Date specified above is the date on which the rights granted under
+this license will terminate and the Software will become available under the
+Change License specified above.
+
+Change License
+
+On the Change Date, the Software will become available under the Change
+License specified above, which will be an open source license (typically GPL
+v2.0 or later).
+
+Definitions
+
+"Software" means the Stationuli software and associated documentation files.
+
+"Non-production" means use of the Software in a development, testing, or
+evaluation environment that is not used to serve end users or generate revenue.
+
+"Production" means use of the Software in a live environment that serves end
+users or generates revenue.
+
+"Commercial License" means a license purchased from the copyright holder that
+permits commercial use of the Software.
+
+Disclaimer of Warranty
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 For commercial licensing inquiries, please contact: trueLoving
