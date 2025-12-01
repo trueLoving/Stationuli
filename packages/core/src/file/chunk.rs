@@ -44,7 +44,6 @@ impl FileChunk {
 
     // 验证完整性
     let total_chunks = chunks[0].total_chunks;
-    let file_name = chunks[0].file_name.clone();
     let file_size = chunks[0].file_size;
 
     if chunks.len() != total_chunks as usize {

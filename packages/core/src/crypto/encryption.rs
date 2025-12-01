@@ -8,18 +8,18 @@ pub struct Encryption {
 }
 
 impl Encryption {
-  pub fn new(key: &[u8]) -> Self {
+  pub fn new() -> Self {
     Self {}
   }
 
   /// 加密数据
-  pub fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>> {
+  pub fn encrypt(&self) -> Result<Vec<u8>> {
     // TODO: 实现加密
     Ok(vec![])
   }
 
   /// 解密数据
-  pub fn decrypt(&self, encrypted: &[u8]) -> Result<Vec<u8>> {
+  pub fn decrypt(&self) -> Result<Vec<u8>> {
     // TODO: 实现解密
     Ok(vec![])
   }

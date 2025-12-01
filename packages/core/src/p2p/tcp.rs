@@ -15,9 +15,20 @@ pub struct TcpConnection {
 impl TcpConnection {
   /// 创建新的 TCP 连接（客户端）
   pub async fn connect(address: &str, port: u16) -> Result<Self> {
+    // 验证地址不为空
+    let address = address.trim();
+    if address.is_empty() {
+      return Err(crate::Error::Network(
+        "Invalid address: address cannot be empty".to_string(),
+      ));
+    }
+
+    // 尝试解析为 SocketAddr
     let addr = format!("{}:{}", address, port)
       .parse::<SocketAddr>()
-      .map_err(|e| crate::Error::Network(format!("Invalid address: {}", e)))?;
+      .map_err(|e| {
+        crate::Error::Network(format!("Invalid address: '{}:{}' - {}", address, port, e))
+      })?;
 
     info!("Connecting to {}", addr);
     let stream = TcpStream::connect(addr)

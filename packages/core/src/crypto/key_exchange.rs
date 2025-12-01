@@ -19,7 +19,7 @@ impl KeyExchange {
   }
 
   /// 执行密钥交换
-  pub fn exchange(&self, public_key: &[u8]) -> Result<Vec<u8>> {
+  pub fn exchange(&self) -> Result<Vec<u8>> {
     // TODO: 实现密钥交换
     Ok(vec![])
   }

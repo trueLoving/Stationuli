@@ -26,7 +26,19 @@ pub enum Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// 初始化核心库
-pub fn init() -> Result<()> {
-  tracing_subscriber::fmt::init();
+///
+/// # Arguments
+/// * `device_type` - 设备类型（"desktop" 或 "mobile"），用于在日志中标识
+///
+/// 注意：日志系统应该在应用层（桌面端/移动端）初始化，这里只记录启动信息
+pub fn init(device_type: &str) -> Result<()> {
+  // 记录启动信息
+  // 注意：日志系统应该在应用层已经初始化，这里直接使用 tracing::info!
+  tracing::info!(
+    "========== {}: Core library initialized ==========",
+    device_type.to_uppercase()
+  );
+  tracing::info!("Device Type: {}", device_type);
+
   Ok(())
 }

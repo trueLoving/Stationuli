@@ -16,8 +16,7 @@
     "@tauri-apps/plugin-opener": "^2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "stationuli-shared": "workspace:*",
-    "stationuli-ui": "workspace:*"
+    "stationuli-common": "workspace:*"
   },
   "devDependencies": {
     "tailwindcss": "^3.4.17",

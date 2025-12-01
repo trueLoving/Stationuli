@@ -63,16 +63,33 @@ impl FileTransfer {
     );
 
     // 读取文件
-    let file_path = Path::new(file_path);
-    let file_name = file_path
-      .file_name()
-      .and_then(|n| n.to_str())
-      .ok_or_else(|| crate::Error::File("Invalid file path".to_string()))?
-      .to_string();
+    // 在 Android 上，文件路径可能是 content:// URI，需要特殊处理
+    let file_data = if file_path.starts_with("content://") {
+      // Android content URI - 需要通过 Tauri 的 Android FS 插件读取
+      // 注意：这里需要在调用端处理，因为 core 库不应该依赖 Tauri
+      return Err(crate::Error::File(
+        "Content URI detected. Please use Tauri's Android FS plugin to read the file first."
+          .to_string(),
+      ));
+    } else {
+      // 普通文件路径
+      let file_path = Path::new(file_path);
+      fs::read(file_path)
+        .await
+        .map_err(|e| crate::Error::File(format!("Read file failed: {}", e)))?
+    };
 
-    let file_data = fs::read(file_path)
-      .await
-      .map_err(|e| crate::Error::File(format!("Read file failed: {}", e)))?;
+    // 获取文件名
+    let file_name = if file_path.starts_with("content://") {
+      // 对于 content URI，尝试从路径中提取文件名，或使用默认名称
+      file_path.split('/').last().unwrap_or("file").to_string()
+    } else {
+      Path::new(file_path)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .ok_or_else(|| crate::Error::File("Invalid file path".to_string()))?
+        .to_string()
+    };
 
     let file_size = file_data.len() as u64;
 
