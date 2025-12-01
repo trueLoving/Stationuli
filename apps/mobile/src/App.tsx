@@ -105,8 +105,12 @@ function App() {
     const completeUnlisten = listen("transfer-complete", (event) => {
       const data = event.payload as { file: string };
       fileTransfer.setTransferProgress(100);
-      const fileName = data.file.split("/").pop() || data.file;
-      alert(`✅ 文件发送成功！\n文件名: ${fileName}\n路径: ${data.file}`);
+      // 使用已存储的文件名（包含后缀），如果没有则从路径提取
+      const fileName =
+        fileTransfer.selectedFileName ||
+        data.file.split("/").pop() ||
+        data.file;
+      alert(`✅ 文件发送成功！\n文件名: ${fileName}`);
       setTimeout(() => {
         fileTransfer.setTransferProgress(0);
       }, 2000);
