@@ -16,6 +16,7 @@ interface TransferTabProps {
   selectedFileSize: number;
   transferProgress: number;
   receivedFiles: ReceivedFile[];
+  isLoading?: boolean;
   onStartDiscovery: () => void;
   onStopDiscovery: () => void;
   onAddDevice: () => void;
@@ -36,6 +37,7 @@ export function TransferTab({
   selectedFileSize,
   transferProgress,
   receivedFiles,
+  isLoading = false,
   onStartDiscovery,
   onStopDiscovery,
   onAddDevice,
@@ -54,6 +56,7 @@ export function TransferTab({
         onStart={onStartDiscovery}
         onStop={onStopDiscovery}
         onAddDevice={onAddDevice}
+        isLoading={isLoading}
       >
         <div>
           <h3 className="text-base font-semibold mb-3 text-gray-700 flex items-center gap-2">

@@ -5,8 +5,14 @@ interface AddDeviceDialogProps {
   isOpen: boolean;
   deviceAddress: string;
   devicePort: string;
+  deviceName: string;
+  deviceType: string;
+  deviceId: string;
   onAddressChange: (address: string) => void;
   onPortChange: (port: string) => void;
+  onNameChange: (name: string) => void;
+  onTypeChange: (type: string) => void;
+  onIdChange: (id: string) => void;
   onClose: () => void;
   onAdd: () => void;
 }

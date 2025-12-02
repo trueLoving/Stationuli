@@ -4,8 +4,14 @@ interface AddDeviceDialogProps {
   isOpen: boolean;
   deviceAddress: string;
   devicePort: string;
+  deviceName: string;
+  deviceType: string;
+  deviceId: string;
   onAddressChange: (address: string) => void;
   onPortChange: (port: string) => void;
+  onNameChange: (name: string) => void;
+  onTypeChange: (type: string) => void;
+  onIdChange: (id: string) => void;
   onClose: () => void;
   onAdd: () => void;
   variant?: "mobile" | "desktop";
@@ -15,8 +21,14 @@ export function AddDeviceDialog({
   isOpen,
   deviceAddress,
   devicePort,
+  deviceName,
+  deviceType,
+  deviceId,
   onAddressChange,
   onPortChange,
+  onNameChange,
+  onTypeChange,
+  onIdChange,
   onClose,
   onAdd,
   variant = "mobile",
@@ -26,9 +38,9 @@ export function AddDeviceDialog({
   const isMobile = variant === "mobile";
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div
-        className={`bg-white rounded-2xl shadow-2xl ${isMobile ? "p-5 w-full max-w-sm" : "p-6 w-full max-w-md mx-4"}`}
+        className={`bg-white rounded-2xl shadow-2xl ${isMobile ? "p-5 w-full max-w-sm my-4" : "p-6 w-full max-w-md mx-4 my-4"}`}
       >
         <h2
           className={`${isMobile ? "text-xl" : "text-2xl"} font-bold text-gray-800 ${isMobile ? "mb-5" : "mb-6"} flex items-center gap-2`}
@@ -37,10 +49,51 @@ export function AddDeviceDialog({
           添加设备
         </h2>
 
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              IP 地址
+              设备名称 <span className="text-gray-400">(可选)</span>
+            </label>
+            <input
+              type="text"
+              value={deviceName}
+              onChange={(e) => onNameChange(e.target.value)}
+              placeholder="例如: 我的电脑"
+              className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isMobile ? "text-base" : ""}`}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              设备类型 <span className="text-gray-400">(可选)</span>
+            </label>
+            <select
+              value={deviceType}
+              onChange={(e) => onTypeChange(e.target.value)}
+              className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white ${isMobile ? "text-base" : ""}`}
+            >
+              <option value="unknown">未知</option>
+              <option value="desktop">桌面端</option>
+              <option value="mobile">移动端</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              设备ID <span className="text-gray-400">(可选)</span>
+            </label>
+            <input
+              type="text"
+              value={deviceId}
+              onChange={(e) => onIdChange(e.target.value)}
+              placeholder="例如: device-xxx"
+              className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm ${isMobile ? "text-base" : ""}`}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              IP 地址 <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -65,7 +118,7 @@ export function AddDeviceDialog({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              端口
+              端口 <span className="text-red-500">*</span>
             </label>
             <input
               type="number"

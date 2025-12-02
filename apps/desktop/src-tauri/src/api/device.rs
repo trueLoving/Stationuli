@@ -17,6 +17,7 @@ pub async fn start_discovery(
   if let Some(mut discovery) = state.inner().discovery.write().await.take() {
     discovery
       .stop()
+      .await
       .map_err(|e| format!("Failed to stop old service: {}", e))?;
     // 等待任务完全停止
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
@@ -57,14 +58,41 @@ pub async fn start_discovery(
 /// 停止设备发现服务
 #[tauri::command]
 pub async fn stop_discovery(state: State<'_, AppState>) -> Result<(), String> {
-  // 停止服务
-  if let Some(mut discovery) = state.inner().discovery.write().await.take() {
-    discovery
-      .stop()
-      .map_err(|e| format!("Failed to stop: {}", e))?;
+  use tracing::info;
+
+  info!("🛑 停止服务");
+
+  // 停止服务（使用超时保护，防止卡住）
+  let stop_result = tokio::time::timeout(tokio::time::Duration::from_secs(3), async {
+    if let Some(mut discovery) = state.inner().discovery.write().await.take() {
+      discovery
+        .stop()
+        .await
+        .map_err(|e| format!("Failed to stop discovery: {}", e))?;
+      info!("✅ 设备发现服务已停止");
+    }
+    Ok::<(), String>(())
+  })
+  .await;
+
+  match stop_result {
+    Ok(Ok(())) => {}
+    Ok(Err(e)) => return Err(e),
+    Err(_) => {
+      info!("⚠️ 停止服务超时，强制清理资源");
+      // 即使超时，也清理资源
+      let _ = state.inner().discovery.write().await.take();
+    }
   }
-  // 清理 TCP listener
+
+  // 清理 TCP listener（这会触发文件接收任务检测到 listener 不存在并退出循环）
   let _ = state.inner().tcp_listener.write().await.take();
+  info!("✅ TCP 监听器已清理");
+
+  // 等待一小段时间，确保所有任务完全停止
+  tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+
+  info!("✅ 服务已完全停止");
   Ok(())
 }
 

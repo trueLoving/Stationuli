@@ -20,6 +20,9 @@ function App() {
   const [showAddDeviceDialog, setShowAddDeviceDialog] = useState(false);
   const [deviceAddress, setDeviceAddress] = useState<string>("");
   const [devicePort, setDevicePort] = useState<string>("8080");
+  const [deviceName, setDeviceName] = useState<string>("");
+  const [deviceType, setDeviceType] = useState<string>("unknown");
+  const [deviceId, setDeviceId] = useState<string>("");
 
   // 使用自定义 Hooks
   const discovery = useDiscovery();
@@ -29,6 +32,9 @@ function App() {
   const openAddDeviceDialog = () => {
     setDeviceAddress("");
     setDevicePort("8080");
+    setDeviceName("");
+    setDeviceType("unknown");
+    setDeviceId("");
     setShowAddDeviceDialog(true);
   };
 
@@ -37,6 +43,9 @@ function App() {
     setShowAddDeviceDialog(false);
     setDeviceAddress("");
     setDevicePort("8080");
+    setDeviceName("");
+    setDeviceType("unknown");
+    setDeviceId("");
   };
 
   // 手动添加设备（添加后自动测试连接）
@@ -54,7 +63,13 @@ function App() {
     }
 
     try {
-      await discovery.addDevice(address, port);
+      await discovery.addDevice(
+        address,
+        port,
+        deviceName.trim() || undefined,
+        deviceType !== "unknown" ? deviceType : undefined,
+        deviceId.trim() || undefined
+      );
       closeAddDeviceDialog();
 
       // 添加后自动测试连接
@@ -153,6 +168,7 @@ function App() {
         onStart={discovery.startDiscovery}
         onStop={discovery.stopDiscovery}
         onAddDevice={openAddDeviceDialog}
+        isLoading={discovery.isLoading}
       >
         <div>
           <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center gap-2">
@@ -299,14 +315,27 @@ function App() {
                 ? discovery.stopDiscovery
                 : discovery.startDiscovery
             }
+            disabled={discovery.isLoading}
             className={`px-6 py-3 rounded-xl font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2 ${
               discovery.isDiscovering
                 ? "bg-gradient-to-r from-red-500 to-pink-600 text-white"
                 : "bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
-            }`}
+            } ${discovery.isLoading ? "opacity-60 cursor-not-allowed" : ""}`}
           >
-            <span>{discovery.isDiscovering ? "⏹" : "▶"}</span>
-            {discovery.isDiscovering ? "停止服务" : "启动服务"}
+            <span>
+              {discovery.isLoading
+                ? "⏳"
+                : discovery.isDiscovering
+                  ? "⏹"
+                  : "▶"}
+            </span>
+            {discovery.isLoading
+              ? discovery.isDiscovering
+                ? "停止中..."
+                : "启动中..."
+              : discovery.isDiscovering
+                ? "停止服务"
+                : "启动服务"}
           </button>
           <button
             onClick={openAddDeviceDialog}
@@ -341,8 +370,14 @@ function App() {
         isOpen={showAddDeviceDialog}
         deviceAddress={deviceAddress}
         devicePort={devicePort}
+        deviceName={deviceName}
+        deviceType={deviceType}
+        deviceId={deviceId}
         onAddressChange={setDeviceAddress}
         onPortChange={setDevicePort}
+        onNameChange={setDeviceName}
+        onTypeChange={setDeviceType}
+        onIdChange={setDeviceId}
         onClose={closeAddDeviceDialog}
         onAdd={handleAddDevice}
       />

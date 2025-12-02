@@ -55,14 +55,23 @@ export function Sidebar({
         </button>
         <button
           onClick={() => onTabChange("control")}
-          className={`w-full flex items-center gap-3 px-4 py-3 mx-2 mt-2 rounded-xl transition-all duration-200 ${
+          disabled
+          className={`w-full flex items-center gap-3 px-4 py-3 mx-2 mt-2 rounded-xl transition-all duration-200 cursor-not-allowed opacity-60 ${
             activeTab === "control"
-              ? "bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md"
-              : "text-gray-700 hover:bg-gray-100"
+              ? "bg-gradient-to-r from-gray-400 to-gray-500 text-white shadow-md"
+              : "text-gray-500 bg-gray-50"
           }`}
+          title="开发中"
         >
           <span className="text-xl flex-shrink-0">⚙️</span>
-          {!sidebarCollapsed && <span className="font-medium">设备控制</span>}
+          {!sidebarCollapsed && (
+            <span className="font-medium flex items-center gap-2">
+              设备控制
+              <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
+                开发中
+              </span>
+            </span>
+          )}
         </button>
       </div>
     </div>

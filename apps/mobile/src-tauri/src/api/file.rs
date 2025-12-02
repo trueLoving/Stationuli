@@ -23,11 +23,22 @@ pub async fn send_file(
     {
       use std::io::Read;
       use tauri_plugin_android_fs::{AndroidFsExt, FileUri};
+      use tracing::info;
 
       let api = app.android_fs_async();
       let json_str = format!(r#"{{"uri": "{}", "documentTopTreeUri": null}}"#, file_path);
       let file_uri = FileUri::from_json_str(&json_str)
         .map_err(|e| format!("Failed to parse URI: {} (URI: {})", e, file_path))?;
+
+      // 尝试获取持久化URI权限（如果还没有获取的话）
+      // 这可以确保即使权限在文件选择后丢失，也能重新获取
+      if let Err(e) = api.take_persistable_uri_permission(&file_uri).await {
+        info!(
+          "[MOBILE] Warning: Could not take persistable URI permission (may already have it): {:?}",
+          e
+        );
+        // 继续尝试读取，因为权限可能已经存在
+      }
 
       // 先获取文件名（在读取文件之前）
       let name = api
@@ -41,11 +52,22 @@ pub async fn send_file(
       let mut file = api
         .open_file_readable(&file_uri)
         .await
-        .map_err(|e| format!("Failed to read file from URI: {} (URI: {})", e, file_path))?;
+        .map_err(|e| {
+          format!(
+            "Failed to read file from URI: {} (URI: {}). This may be due to missing permissions. Please try selecting the file again.",
+            e, file_path
+          )
+        })?;
       let mut contents = Vec::new();
       file
         .read_to_end(&mut contents)
         .map_err(|e| format!("Failed to read file contents: {}", e))?;
+
+      info!(
+        "[MOBILE] Successfully read file: {} (size: {} bytes)",
+        name,
+        contents.len()
+      );
 
       (contents, name)
     }
@@ -415,6 +437,19 @@ pub async fn select_file_android(app: AppHandle) -> Result<Option<serde_json::Va
     .map_err(|e| format!("Failed to show file picker: {}", e))?;
 
   if let Some(file_uri) = selected_files.first() {
+    // 重要：获取持久化URI权限，确保后续可以读取文件
+    // 如果不获取持久化权限，URI的访问权限可能会在应用暂停或URI过期后失效
+    if let Err(e) = api.take_persistable_uri_permission(file_uri).await {
+      info!(
+        "[MOBILE] Warning: Failed to take persistable URI permission: {:?}. File may not be accessible later.",
+        e
+      );
+      // 即使获取持久化权限失败，也继续尝试，因为某些URI可能不支持持久化权限
+      // 但会在后续读取时可能失败
+    } else {
+      info!("[MOBILE] Successfully obtained persistable URI permission");
+    }
+
     // 尝试获取文件名
     let file_name = api.get_name(file_uri).await.ok().unwrap_or_else(|| {
       // 如果无法获取文件名，尝试从 URI 中提取

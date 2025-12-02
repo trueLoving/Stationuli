@@ -28,15 +28,17 @@ export function BottomNavigation({
         </button>
         <button
           onClick={() => onTabChange("control")}
-          className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 relative ${
-            activeTab === "control" ? "text-purple-600" : "text-gray-500"
-          }`}
+          disabled
+          className="flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 relative cursor-not-allowed opacity-60 text-gray-400"
+          title="开发中"
         >
           <span className="text-2xl mb-1">⚙️</span>
-          <span className="text-xs font-medium">设备控制</span>
-          {activeTab === "control" && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600 rounded-t-full"></div>
-          )}
+          <span className="text-xs font-medium flex items-center gap-1">
+            设备控制
+            <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full">
+              开发中
+            </span>
+          </span>
         </button>
       </div>
     </div>

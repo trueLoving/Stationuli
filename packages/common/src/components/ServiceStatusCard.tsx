@@ -8,6 +8,7 @@ interface ServiceStatusCardProps {
   onStart: () => void;
   onStop: () => void;
   onAddDevice: () => void;
+  isLoading?: boolean;
   children?: React.ReactNode;
   variant?: "mobile" | "desktop";
 }
@@ -20,6 +21,7 @@ export function ServiceStatusCard({
   onStart,
   onStop,
   onAddDevice,
+  isLoading = false,
   children,
   variant = "mobile",
 }: ServiceStatusCardProps) {
@@ -70,17 +72,29 @@ export function ServiceStatusCard({
 
       <div className={buttonContainerClass}>
         {!isDiscovering ? (
-          <button onClick={onStart} className={buttonClass}>
-            <span>▶</span>
-            启动服务
+          <button
+            onClick={onStart}
+            disabled={isLoading}
+            className={`${buttonClass} ${isLoading ? "opacity-60 cursor-not-allowed" : ""}`}
+          >
+            <span>{isLoading ? "⏳" : "▶"}</span>
+            {isLoading ? "启动中..." : "启动服务"}
           </button>
         ) : (
-          <button onClick={onStop} className={stopButtonClass}>
-            <span>⏹</span>
-            停止服务
+          <button
+            onClick={onStop}
+            disabled={isLoading}
+            className={`${stopButtonClass} ${isLoading ? "opacity-60 cursor-not-allowed" : ""}`}
+          >
+            <span>{isLoading ? "⏳" : "⏹"}</span>
+            {isLoading ? "停止中..." : "停止服务"}
           </button>
         )}
-        <button onClick={onAddDevice} className={addButtonClass}>
+        <button
+          onClick={onAddDevice}
+          disabled={isLoading}
+          className={`${addButtonClass} ${isLoading ? "opacity-60 cursor-not-allowed" : ""}`}
+        >
           <span>➕</span>
           添加设备
         </button>
@@ -98,11 +112,38 @@ export function ServiceStatusCard({
             </p>
             {localIp && (
               <>
-                <p
-                  className={`font-mono ${ipTextSize} font-semibold text-gray-800 break-all ${isMobile ? "mb-1" : "mb-2"}`}
+                <div
+                  className={`flex items-center gap-2 ${isMobile ? "mb-1" : "mb-2"}`}
                 >
-                  IP: {localIp}:{defaultPort}
-                </p>
+                  <p
+                    className={`font-mono ${ipTextSize} font-semibold text-gray-800 break-all flex-1`}
+                  >
+                    IP: {localIp}:{defaultPort}
+                  </p>
+                  <button
+                    onClick={async (event) => {
+                      const textToCopy = `${localIp}:${defaultPort}`;
+                      try {
+                        await navigator.clipboard.writeText(textToCopy);
+                        // 简单的反馈提示
+                        const btn = event.currentTarget as HTMLButtonElement;
+                        const originalText = btn.innerHTML;
+                        btn.innerHTML = "✓";
+                        btn.classList.add("text-green-600");
+                        setTimeout(() => {
+                          btn.innerHTML = originalText;
+                          btn.classList.remove("text-green-600");
+                        }, 1000);
+                      } catch (err) {
+                        console.error("复制失败:", err);
+                      }
+                    }}
+                    className="px-2 py-1 text-gray-500 hover:text-gray-700 active:text-green-600 transition-colors"
+                    title="复制IP地址"
+                  >
+                    📋
+                  </button>
+                </div>
                 {localIp === "localhost" && isMobile && (
                   <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p className="text-[10px] text-yellow-800 font-medium mb-1">
@@ -122,11 +163,37 @@ export function ServiceStatusCard({
               </>
             )}
             {deviceId && (
-              <p
-                className={`font-mono ${idTextSize} text-gray-600 break-all ${isMobile ? "mt-2" : ""}`}
+              <div
+                className={`flex items-center gap-2 ${isMobile ? "mt-2" : ""}`}
               >
-                ID: {deviceId}
-              </p>
+                <p
+                  className={`font-mono ${idTextSize} text-gray-600 break-all flex-1`}
+                >
+                  ID: {deviceId}
+                </p>
+                <button
+                  onClick={async (event) => {
+                    try {
+                      await navigator.clipboard.writeText(deviceId);
+                      // 简单的反馈提示
+                      const btn = event.currentTarget as HTMLButtonElement;
+                      const originalText = btn.innerHTML;
+                      btn.innerHTML = "✓";
+                      btn.classList.add("text-green-600");
+                      setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.classList.remove("text-green-600");
+                      }, 1000);
+                    } catch (err) {
+                      console.error("复制失败:", err);
+                    }
+                  }}
+                  className="px-2 py-1 text-gray-500 hover:text-gray-700 active:text-green-600 transition-colors"
+                  title="复制设备ID"
+                >
+                  📋
+                </button>
+              </div>
             )}
           </div>
           {localIp !== "localhost" && isMobile && (

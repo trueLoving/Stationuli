@@ -8,6 +8,7 @@ interface ControlTabProps {
   deviceId: string;
   devices: DeviceInfo[];
   receivedFilesCount: number;
+  isLoading?: boolean;
   onStartDiscovery: () => void;
   onStopDiscovery: () => void;
   onAddDevice: () => void;
@@ -19,6 +20,7 @@ export function ControlTab({
   deviceId,
   devices,
   receivedFilesCount,
+  isLoading = false,
   onStartDiscovery,
   onStopDiscovery,
   onAddDevice,
@@ -117,14 +119,21 @@ export function ControlTab({
         <div className="space-y-3">
           <button
             onClick={isDiscovering ? onStopDiscovery : onStartDiscovery}
+            disabled={isLoading}
             className={`w-full px-5 py-4 rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 text-base ${
               isDiscovering
                 ? "bg-gradient-to-r from-red-500 to-pink-600 text-white"
                 : "bg-gradient-to-r from-blue-500 to-indigo-600 text-white"
-            }`}
+            } ${isLoading ? "opacity-60 cursor-not-allowed" : ""}`}
           >
-            <span>{isDiscovering ? "⏹" : "▶"}</span>
-            {isDiscovering ? "停止服务" : "启动服务"}
+            <span>{isLoading ? "⏳" : isDiscovering ? "⏹" : "▶"}</span>
+            {isLoading
+              ? isDiscovering
+                ? "停止中..."
+                : "启动中..."
+              : isDiscovering
+                ? "停止服务"
+                : "启动服务"}
           </button>
           <button
             onClick={onAddDevice}

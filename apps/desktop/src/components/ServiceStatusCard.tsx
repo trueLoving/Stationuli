@@ -9,6 +9,7 @@ interface ServiceStatusCardProps {
   onStart: () => void;
   onStop: () => void;
   onAddDevice: () => void;
+  isLoading?: boolean;
   children?: React.ReactNode;
 }
 

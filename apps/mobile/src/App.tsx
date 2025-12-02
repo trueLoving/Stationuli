@@ -17,6 +17,9 @@ function App() {
   const [showAddDeviceDialog, setShowAddDeviceDialog] = useState(false);
   const [deviceAddress, setDeviceAddress] = useState<string>("");
   const [devicePort, setDevicePort] = useState<string>("8080");
+  const [deviceName, setDeviceName] = useState<string>("");
+  const [deviceType, setDeviceType] = useState<string>("unknown");
+  const [deviceId, setDeviceId] = useState<string>("");
 
   // 使用自定义 Hooks
   const discovery = useDiscovery();
@@ -26,6 +29,9 @@ function App() {
   const openAddDeviceDialog = () => {
     setDeviceAddress("");
     setDevicePort("8080");
+    setDeviceName("");
+    setDeviceType("unknown");
+    setDeviceId("");
     setShowAddDeviceDialog(true);
   };
 
@@ -34,6 +40,9 @@ function App() {
     setShowAddDeviceDialog(false);
     setDeviceAddress("");
     setDevicePort("8080");
+    setDeviceName("");
+    setDeviceType("unknown");
+    setDeviceId("");
   };
 
   // 手动添加设备（添加后自动测试连接）
@@ -51,7 +60,13 @@ function App() {
     }
 
     try {
-      await discovery.addDevice(address, port);
+      await discovery.addDevice(
+        address,
+        port,
+        deviceName.trim() || undefined,
+        deviceType !== "unknown" ? deviceType : undefined,
+        deviceId.trim() || undefined
+      );
       closeAddDeviceDialog();
 
       // 添加后自动测试连接
@@ -147,6 +162,7 @@ function App() {
             selectedFileSize={fileTransfer.selectedFileSize}
             transferProgress={fileTransfer.transferProgress}
             receivedFiles={fileTransfer.receivedFiles}
+            isLoading={discovery.isLoading}
             onStartDiscovery={discovery.startDiscovery}
             onStopDiscovery={discovery.stopDiscovery}
             onAddDevice={openAddDeviceDialog}
@@ -162,6 +178,7 @@ function App() {
             deviceId={discovery.deviceId}
             devices={discovery.devices}
             receivedFilesCount={fileTransfer.receivedFiles.length}
+            isLoading={discovery.isLoading}
             onStartDiscovery={discovery.startDiscovery}
             onStopDiscovery={discovery.stopDiscovery}
             onAddDevice={openAddDeviceDialog}
@@ -178,8 +195,14 @@ function App() {
         isOpen={showAddDeviceDialog}
         deviceAddress={deviceAddress}
         devicePort={devicePort}
+        deviceName={deviceName}
+        deviceType={deviceType}
+        deviceId={deviceId}
         onAddressChange={setDeviceAddress}
         onPortChange={setDevicePort}
+        onNameChange={setDeviceName}
+        onTypeChange={setDeviceType}
+        onIdChange={setDeviceId}
         onClose={closeAddDeviceDialog}
         onAdd={handleAddDevice}
       />

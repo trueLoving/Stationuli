@@ -94,7 +94,7 @@ impl MdnsDiscovery {
   }
 
   /// 停止服务（简化版）
-  pub fn stop(&mut self) -> Result<()> {
+  pub async fn stop(&mut self) -> Result<()> {
     info!("Stopping service");
 
     // 取消服务注册（如果存在）
@@ -112,8 +112,8 @@ impl MdnsDiscovery {
       handle.abort();
     }
 
-    // 清理设备列表
-    self.devices.blocking_write().clear();
+    // 清理设备列表（使用异步写操作）
+    self.devices.write().await.clear();
 
     // 清理响应器（如果存在）
     if let Some(responder) = self.responder.take() {
