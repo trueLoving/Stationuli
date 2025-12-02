@@ -1,40 +1,54 @@
 name: Release
 
-# 仅支持手动触发
+# 仅支持手动触发，支持选择发布目标
 on:
   workflow_dispatch:
+    inputs:
+      target:
+        description: '选择发布目标'
+        required: true
+        type: choice
+        options:
+          - desktop
+          - mobile
+          - both
+        default: 'both'
 
 jobs:
-  release-desktop:
+  build-desktop:
+    if: ${{ inputs.target == 'desktop' || inputs.target == 'both' }}
+    permissions:
+      contents: write
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            artifact: AppImage
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            artifact: dmg
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            artifact: msi
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+            artifact_name: 'Stationuli-macos-arm64'
+          - platform: 'macos-latest'
+            args: '--target x86_64-apple-darwin'
+            artifact_name: 'Stationuli-macos-x86_64'
+          - platform: 'windows-latest'
+            args: ''
+            artifact_name: 'Stationuli-windows'
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.platform }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 10.18.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -42,56 +56,38 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      - name: Cache Rust dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-rust-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-rust-${{ matrix.target }}-
-
-      - name: Build shared packages
-        run: |
-          cd packages/shared && pnpm build
-          cd ../ui && pnpm build
-
-      - name: Build desktop app
-        run: |
-          cd apps/desktop
-          pnpm tauri build --target ${{ matrix.target }}
-
-      - name: Upload to release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**
+      - name: Build with Tauri Action
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: apps/desktop
+          tauriScript: pnpm tauri
+          args: ${{ matrix.args }}
+          releaseAssetNamePattern: '${{ matrix.artifact_name }}[ext]'
+          uploadWorkflowArtifacts: true
+          workflowArtifactNamePattern: '${{ matrix.artifact_name }}[ext]'
 
-  release-mobile:
+  build-mobile:
+    if: ${{ inputs.target == 'mobile' || inputs.target == 'both' }}
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 10.18.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -127,24 +123,65 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-rust-android-
 
-      - name: Build shared packages
-        run: |
-          cd packages/shared && pnpm build
-          cd ../ui && pnpm build
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
-      - name: Build Android AAB
+      - name: Check Android Signing Secret
+        id: check_signing
         run: |
-          cd apps/mobile
-          pnpm tauri android build --bundle
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "has_signing=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_signing=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Android Signing
+        if: steps.check_signing.outputs.has_signing == 'true'
+        run: |
+          cd apps/mobile/src-tauri
+          
+          # 创建密钥库目录并保存密钥库文件
+          mkdir -p ~/.android
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > ~/.android/upload-keystore.jks
+          
+          # 从 keystore.properties.example 复制为 keystore.properties
+          cp sign-apk/keystore.properties.example sign-apk/keystore.properties
+          
+          # 修改 keystore.properties 中的配置项
+          KEYSTORE_PATH="$HOME/.android/upload-keystore.jks"
+          KEY_ALIAS="${{ secrets.ANDROID_KEY_ALIAS }}"
+          KEY_ALIAS="${KEY_ALIAS:-upload}"
+          
+          # 使用 sed 替换配置值
+          sed -i "s|storePassword=.*|storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}|" sign-apk/keystore.properties
+          sed -i "s|keyPassword=.*|keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}|" sign-apk/keystore.properties
+          sed -i "s|keyAlias=.*|keyAlias=$KEY_ALIAS|" sign-apk/keystore.properties
+          sed -i "s|storeFile=.*|storeFile=$KEYSTORE_PATH|" sign-apk/keystore.properties
+          
+          echo "✅ 已创建并配置 sign-apk/keystore.properties"
+          echo "密钥库位置: $KEYSTORE_PATH"
+          
+          # 运行签名配置脚本
+          chmod +x sign-apk/setup-android-signing.sh
+          ./sign-apk/setup-android-signing.sh
+
+      - name: Build Android APK
+        run: |
+          pnpm run build:mobile --apk true
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
 
-      - name: Upload to release
-        uses: softprops/action-gh-release@v1
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
-          files: |
-            apps/mobile/src-tauri/target/android/**/*.aab
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+          name: Stationuli-android.apk
+          path: apps/mobile/src-tauri/gen/android/app/build/outputs/apk/universal/release/*.apk
+          retention-days: 7
