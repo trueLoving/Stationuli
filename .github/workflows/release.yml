@@ -9,14 +9,19 @@ on:
         required: true
         type: choice
         options:
-          - desktop
-          - mobile
-          - both
-        default: 'both'
+          - mac
+          - windows
+          - android
+        default: 'mac'
+      create_release:
+        description: '是否创建 GitHub Release'
+        required: true
+        type: boolean
+        default: false
 
 jobs:
-  build-desktop:
-    if: ${{ inputs.target == 'desktop' || inputs.target == 'both' }}
+  build-mac:
+    if: ${{ inputs.target == 'mac' }}
     permissions:
       contents: write
     strategy:
@@ -29,9 +34,6 @@ jobs:
           - platform: 'macos-latest'
             args: '--target x86_64-apple-darwin --bundles dmg'
             artifact_name: 'Stationuli-macos-x86_64'
-          - platform: 'windows-latest'
-            args: ''
-            artifact_name: 'Stationuli-windows'
 
     runs-on: ${{ matrix.platform }}
 
@@ -56,28 +58,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
-
-      - name: Check Windows build tools (Windows only)
-        if: matrix.platform == 'windows-latest'
-        shell: pwsh
-        run: |
-          Write-Host "=== 检查 Windows 构建工具 ==="
-          Write-Host "检查 WiX (MSI 需要):"
-          if (Get-Command light.exe -ErrorAction SilentlyContinue) {
-            Write-Host "✓ WiX 已安装"
-            light.exe -? | Select-Object -First 1
-          } else {
-            Write-Host "✗ WiX 未找到 (MSI 构建可能需要)"
-          }
-          Write-Host ""
-          Write-Host "检查 NSIS (NSIS 安装包需要):"
-          if (Get-Command makensis.exe -ErrorAction SilentlyContinue) {
-            Write-Host "✓ NSIS 已安装"
-            makensis.exe -VERSION
-          } else {
-            Write-Host "✗ NSIS 未找到 (NSIS 构建可能需要)"
-          }
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
 
       - name: Build Desktop App  
         run: | 
@@ -95,19 +76,8 @@ jobs:
             echo "--- 所有目录列表 ---"
             find target -type d | sort
             echo ""
-            echo "--- 目录树结构 ---"
-            if command -v tree &> /dev/null; then
-              tree -L 5 target || find target -type d | sort
-            else
-              echo "tree 命令不可用，使用 find 显示目录结构:"
-              find target -type d | sort
-            fi
-            echo ""
             echo "--- bundle 目录中的文件 ---"
             find target -path "*/bundle/*" -type f 2>/dev/null | head -20 || echo "未找到 bundle 文件"
-            echo ""
-            echo "--- Windows 构建产物 (.msi, .exe) ---"
-            find target -name "*.msi" -o -name "*.exe" 2>/dev/null | head -10 || echo "未找到 .msi 或 .exe 文件"
             echo ""
             echo "--- macOS 构建产物 (.dmg) ---"
             find target -name "*.dmg" 2>/dev/null | head -10 || echo "未找到 .dmg 文件"
@@ -122,13 +92,117 @@ jobs:
           path: |
             target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
             target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
-            target/release/*.exe
+          retention-days: 7
+
+  build-windows:
+    if: ${{ inputs.target == 'windows' }}
+    permissions:
+      contents: write
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.18.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install NSIS
+        shell: pwsh
+        run: |
+          Write-Host "=== 安装 NSIS ==="
+          if (Get-Command makensis.exe -ErrorAction SilentlyContinue) {
+            Write-Host "NSIS 已安装"
+            makensis.exe -VERSION
+          } else {
+            Write-Host "正在使用 winget 安装 NSIS..."
+            winget install --id NSIS.NSIS --silent --accept-package-agreements --accept-source-agreements
+            # 刷新环境变量
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+            # 尝试找到 NSIS 安装路径
+            $nsisPath = "$env:ProgramFiles\NSIS\makensis.exe"
+            if (Test-Path $nsisPath) {
+              $env:Path += ";$env:ProgramFiles\NSIS"
+              Write-Host "✓ NSIS 安装成功"
+              & $nsisPath -VERSION
+            } else {
+              Write-Host "✗ NSIS 安装失败，将只生成 MSI 安装包"
+            }
+          }
+
+      - name: Check Windows build tools
+        shell: pwsh
+        run: |
+          Write-Host "=== 检查 Windows 构建工具 ==="
+          Write-Host "检查 WiX (MSI 需要):"
+          if (Get-Command light.exe -ErrorAction SilentlyContinue) {
+            Write-Host "✓ WiX 已安装"
+            light.exe -? | Select-Object -First 1
+          } else {
+            Write-Host "✗ WiX 未找到 (MSI 构建可能需要)"
+          }
+          Write-Host ""
+          Write-Host "检查 NSIS (NSIS 安装包需要):"
+          $nsisPath = "$env:ProgramFiles\NSIS\makensis.exe"
+          if (Test-Path $nsisPath) {
+            $env:Path += ";$env:ProgramFiles\NSIS"
+          }
+          if (Get-Command makensis.exe -ErrorAction SilentlyContinue) {
+            Write-Host "✓ NSIS 已安装"
+            makensis.exe -VERSION
+          } else {
+            Write-Host "✗ NSIS 未找到 (NSIS 构建可能需要)"
+          }
+
+      - name: Build Desktop App  
+        run: | 
+          echo "=== 构建参数 ==="
+          echo "平台: windows-latest"
+          pnpm build:desktop || (echo "构建失败，退出码: $?" && exit 1) 
+  
+      - name: Debug - List target directory structure
+        shell: pwsh
+        run: |
+          Write-Host "=== target 目录结构 ==="
+          if (Test-Path "target") {
+            Write-Host ""
+            Write-Host "--- 所有目录列表 ---"
+            Get-ChildItem -Path target -Recurse -Directory | Select-Object -ExpandProperty FullName | Sort-Object
+            Write-Host ""
+            Write-Host "--- bundle 目录中的文件 ---"
+            Get-ChildItem -Path target -Recurse -Filter "*bundle*" -File | Select-Object -First 20 -ExpandProperty FullName
+            Write-Host ""
+            Write-Host "--- Windows 构建产物 (.msi, .exe) ---"
+            Get-ChildItem -Path target -Recurse -Include *.msi,*.exe | Select-Object -First 10 -ExpandProperty FullName
+          } else {
+            Write-Host "target 目录不存在"
+          }
+  
+      - name: Upload Desktop Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Stationuli-windows
+          path: |
             target/release/bundle/msi/*.msi
             target/release/bundle/nsis/*.exe
           retention-days: 7
 
-  build-mobile-android:
-    if: ${{ inputs.target == 'mobile' || inputs.target == 'both' }}
+  build-android:
+    if: ${{ inputs.target == 'android' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -242,3 +316,79 @@ jobs:
           name: Stationuli-android.apk
           path: apps/mobile/src-tauri/gen/android/app/build/outputs/apk/universal/release/*.apk
           retention-days: 7
+
+  create-release:
+    if: ${{ always() && inputs.create_release == true }}
+    needs: [build-mac, build-windows, build-android]
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          path: artifacts
+
+      - name: Get version from package.json
+        id: get_version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "版本: $VERSION"
+
+      - name: List available artifacts
+        run: |
+          echo "=== 可用的构建产物 ==="
+          find artifacts -type f 2>/dev/null | head -20 || echo "未找到构建产物"
+
+      - name: Generate release body
+        id: release_body
+        run: |
+          BODY="## 发布版本 v${{ steps.get_version.outputs.version }}
+          
+          ### 构建产物
+          
+          本次发布包含以下平台的构建产物：
+          "
+          
+          if [ "${{ inputs.target }}" == "mac" ]; then
+            BODY="$BODY
+          - macOS (ARM64 和 x86_64)"
+          fi
+          
+          if [ "${{ inputs.target }}" == "windows" ]; then
+            BODY="$BODY
+          - Windows (MSI 和 NSIS)"
+          fi
+          
+          if [ "${{ inputs.target }}" == "android" ]; then
+            BODY="$BODY
+          - Android (APK)"
+          fi
+          
+          BODY="$BODY
+          
+          ### 下载
+          
+          请从下方的 Assets 中下载对应平台的安装包。"
+          
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: Release v${{ steps.get_version.outputs.version }}
+          body: ${{ steps.release_body.outputs.body }}
+          files: |
+            artifacts/**/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
