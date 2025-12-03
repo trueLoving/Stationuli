@@ -59,18 +59,17 @@ jobs:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Build with Tauri Action
-        uses: tauri-apps/tauri-action@v1
+        uses: tauri-apps/tauri-action@v0.5.24
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: apps/desktop
           tauriScript: pnpm tauri
           args: ${{ matrix.args }}
-          releaseAssetNamePattern: '${{ matrix.artifact_name }}[ext]'
-          uploadWorkflowArtifacts: true
+          assetNamePattern: '${{ matrix.artifact_name }}[ext]'
           workflowArtifactNamePattern: '${{ matrix.artifact_name }}[ext]'
 
-  build-mobile:
+  build-mobile-android:
     if: ${{ inputs.target == 'mobile' || inputs.target == 'both' }}
     runs-on: ubuntu-latest
 
