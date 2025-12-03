@@ -24,10 +24,10 @@ jobs:
       matrix:
         include:
           - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin'
+            args: '--target aarch64-apple-darwin --bundles dmg'
             artifact_name: 'Stationuli-macos-arm64'
           - platform: 'macos-latest'
-            args: '--target x86_64-apple-darwin'
+            args: '--target x86_64-apple-darwin --bundles dmg'
             artifact_name: 'Stationuli-macos-x86_64'
           - platform: 'windows-latest'
             args: ''
@@ -58,16 +58,74 @@ jobs:
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      - name: Build with Tauri Action
-        uses: tauri-apps/tauri-action@v0.5.24
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check Windows build tools (Windows only)
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          Write-Host "=== 检查 Windows 构建工具 ==="
+          Write-Host "检查 WiX (MSI 需要):"
+          if (Get-Command light.exe -ErrorAction SilentlyContinue) {
+            Write-Host "✓ WiX 已安装"
+            light.exe -? | Select-Object -First 1
+          } else {
+            Write-Host "✗ WiX 未找到 (MSI 构建可能需要)"
+          }
+          Write-Host ""
+          Write-Host "检查 NSIS (NSIS 安装包需要):"
+          if (Get-Command makensis.exe -ErrorAction SilentlyContinue) {
+            Write-Host "✓ NSIS 已安装"
+            makensis.exe -VERSION
+          } else {
+            Write-Host "✗ NSIS 未找到 (NSIS 构建可能需要)"
+          }
+
+      - name: Build Desktop App  
+        run: | 
+          echo "=== 构建参数 ==="
+          echo "args: ${{ matrix.args }}"
+          echo "平台: ${{ matrix.platform }}"
+          pnpm build:desktop ${{ matrix.args }} || (echo "构建失败，退出码: $?" && exit 1) 
+  
+      - name: Debug - List target directory structure
+        shell: bash
+        run: |
+          echo "=== target 目录结构 ==="
+          if [ -d "target" ]; then
+            echo ""
+            echo "--- 所有目录列表 ---"
+            find target -type d | sort
+            echo ""
+            echo "--- 目录树结构 ---"
+            if command -v tree &> /dev/null; then
+              tree -L 5 target || find target -type d | sort
+            else
+              echo "tree 命令不可用，使用 find 显示目录结构:"
+              find target -type d | sort
+            fi
+            echo ""
+            echo "--- bundle 目录中的文件 ---"
+            find target -path "*/bundle/*" -type f 2>/dev/null | head -20 || echo "未找到 bundle 文件"
+            echo ""
+            echo "--- Windows 构建产物 (.msi, .exe) ---"
+            find target -name "*.msi" -o -name "*.exe" 2>/dev/null | head -10 || echo "未找到 .msi 或 .exe 文件"
+            echo ""
+            echo "--- macOS 构建产物 (.dmg) ---"
+            find target -name "*.dmg" 2>/dev/null | head -10 || echo "未找到 .dmg 文件"
+          else
+            echo "target 目录不存在"
+          fi
+  
+      - name: Upload Desktop Artifacts
+        uses: actions/upload-artifact@v4
         with:
-          projectPath: apps/desktop
-          tauriScript: pnpm tauri
-          args: ${{ matrix.args }}
-          assetNamePattern: '${{ matrix.artifact_name }}[ext]'
-          workflowArtifactNamePattern: '${{ matrix.artifact_name }}[ext]'
+          name: ${{ matrix.artifact_name }}
+          path: |
+            target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+            target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
+            target/release/*.exe
+            target/release/bundle/msi/*.msi
+            target/release/bundle/nsis/*.exe
+          retention-days: 7
 
   build-mobile-android:
     if: ${{ inputs.target == 'mobile' || inputs.target == 'both' }}
