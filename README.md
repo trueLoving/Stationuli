@@ -56,6 +56,13 @@ Pure P2P cross-platform file transfer and control tool:
 4. **Zero-Configuration**: Automatic device discovery on LAN (mDNS), one-click connection, ready to use
 5. **Native Performance**: Fully utilizes system capabilities for optimal performance and complete functionality
 
+## 🤝 Contributing
+
+We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) to get started.
+
+- [Contributing Guide (English)](CONTRIBUTING.md)
+- [贡献指南 (中文)](CONTRIBUTING.zh-CN.md)
+
 ## 📄 License
 
 This project is licensed under the **Business Source License (BSL) 1.1**.

@@ -56,6 +56,13 @@ Stationuli 是一个**完全自主、完全离线、完全私有**的个人工�
 4. **零配置使用**：局域网设备自动发现（mDNS），一键连接，开箱即用
 5. **原生性能**：充分利用系统能力，性能最优，功能完整
 
+## 🤝 贡献
+
+我们欢迎贡献！请阅读我们的[贡献指南](CONTRIBUTING.zh-CN.md)开始。
+
+- [Contributing Guide (English)](CONTRIBUTING.md)
+- [贡献指南 (中文)](CONTRIBUTING.zh-CN.md)
+
 ## 📄 许可证
 
 本项目采用 **Business Source License (BSL) 1.1** 许可证。
