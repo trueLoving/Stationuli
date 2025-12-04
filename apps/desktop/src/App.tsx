@@ -1,6 +1,7 @@
 // 主应用组件
 
 import { listen } from "@tauri-apps/api/event";
+import { Plus, Smartphone } from "lucide-react";
 import { useEffect, useState } from "react";
 import * as deviceApi from "./api/device";
 import "./App.css";
@@ -27,6 +28,32 @@ function App() {
   // 使用自定义 Hooks
   const discovery = useDiscovery();
   const fileTransfer = useFileTransfer();
+
+  // 键盘快捷键支持
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + B 切换侧边栏
+      if ((e.ctrlKey || e.metaKey) && e.key === "b") {
+        e.preventDefault();
+        setSidebarCollapsed(!sidebarCollapsed);
+      }
+      // Ctrl/Cmd + 1 切换到文件传输
+      if ((e.ctrlKey || e.metaKey) && e.key === "1") {
+        e.preventDefault();
+        setActiveTab("transfer");
+      }
+      // Ctrl/Cmd + 2 切换到设备控制
+      if ((e.ctrlKey || e.metaKey) && e.key === "2") {
+        e.preventDefault();
+        setActiveTab("control");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [sidebarCollapsed]);
 
   // 打开添加设备对话框
   const openAddDeviceDialog = () => {
@@ -172,7 +199,7 @@ function App() {
       >
         <div>
           <h3 className="text-lg font-semibold mb-4 text-gray-700 flex items-center gap-2">
-            <span>📱</span>
+            <Smartphone className="w-5 h-5" aria-hidden="true" />
             已添加的设备
             <span className="ml-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
               {discovery.devices.length}
@@ -180,8 +207,15 @@ function App() {
           </h3>
           {discovery.devices.length === 0 ? (
             <div className="text-center py-12">
-              <div className="text-6xl mb-4">➕</div>
-              <p className="text-gray-500 text-lg mb-2">暂无设备</p>
+              <div className="flex justify-center mb-4">
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center">
+                  <Plus
+                    className="w-10 h-10 text-blue-600"
+                    aria-hidden="true"
+                  />
+                </div>
+              </div>
+              <p className="text-gray-500 text-lg mb-2 font-medium">暂无设备</p>
               <p className="text-gray-400 text-sm">
                 点击"添加设备"按钮手动添加其他设备
               </p>
@@ -208,6 +242,27 @@ function App() {
         transferProgress={fileTransfer.transferProgress}
         onSelectFile={fileTransfer.selectFile}
         onClearFile={fileTransfer.clearSelectedFile}
+        onFileDrop={async (file: File) => {
+          // 处理拖拽的文件
+          try {
+            // 在 Tauri 桌面应用中，我们可以读取文件内容
+            // 但由于安全限制，无法直接获取完整路径
+            // 这里我们提示用户使用文件选择器
+            // 未来可以使用 Tauri 的拖拽事件 API 来获取完整路径
+            const arrayBuffer = await file.arrayBuffer();
+            const fileName = file.name;
+            const fileSize = file.size;
+
+            // 由于无法获取完整路径，我们提示用户
+            // 实际应用中，应该使用 Tauri 的文件拖拽事件
+            alert(
+              `已检测到文件: ${fileName}\n由于浏览器安全限制，请使用"选择文件"按钮选择文件。`
+            );
+          } catch (error) {
+            console.error("处理拖拽文件失败:", error);
+          }
+        }}
+        variant="desktop"
       />
 
       <ReceivedFilesCard
@@ -350,7 +405,7 @@ function App() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 font-sans flex">
+    <div className="h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 font-sans flex overflow-hidden">
       <Sidebar
         activeTab={activeTab}
         sidebarCollapsed={sidebarCollapsed}
@@ -359,8 +414,8 @@ function App() {
       />
 
       {/* 主内容区域 */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="flex-1 overflow-y-auto h-screen">
+        <div className="max-w-5xl xl:max-w-7xl mx-auto px-6 py-8">
           {activeTab === "transfer" ? <TransferTab /> : <ControlTab />}
         </div>
       </div>

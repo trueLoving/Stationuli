@@ -1,5 +1,6 @@
 // 文件传输标签页组件
 
+import { Plus, Smartphone } from "lucide-react";
 import type { DeviceInfo, ReceivedFile } from "../types";
 import { DeviceCard } from "./DeviceCard";
 import { FileSelectionCard } from "./FileSelectionCard";
@@ -48,7 +49,7 @@ export function TransferTab({
   onSaveReceivedFile,
 }: TransferTabProps) {
   return (
-    <div className="pb-24">
+    <div>
       <ServiceStatusCard
         isDiscovering={isDiscovering}
         deviceId={deviceId}
@@ -60,7 +61,7 @@ export function TransferTab({
       >
         <div>
           <h3 className="text-base font-semibold mb-3 text-gray-700 flex items-center gap-2">
-            <span>📱</span>
+            <Smartphone className="w-4 h-4" aria-hidden="true" />
             已添加的设备
             <span className="ml-1 px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
               {devices.length}
@@ -68,8 +69,14 @@ export function TransferTab({
           </h3>
           {devices.length === 0 ? (
             <div className="text-center py-8">
-              <div className="text-5xl mb-3">➕</div>
-              <p className="text-gray-500 text-base mb-1">暂无设备</p>
+              <div className="flex justify-center mb-3">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center">
+                  <Plus className="w-8 h-8 text-blue-600" aria-hidden="true" />
+                </div>
+              </div>
+              <p className="text-gray-500 text-base mb-1 font-medium">
+                暂无设备
+              </p>
               <p className="text-gray-400 text-sm">
                 点击"添加设备"按钮手动添加其他设备
               </p>

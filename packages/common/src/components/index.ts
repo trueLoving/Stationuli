@@ -6,3 +6,5 @@ export { FileCard } from "./FileCard";
 export { FileSelectionCard } from "./FileSelectionCard";
 export { ReceivedFilesCard } from "./ReceivedFilesCard";
 export { ServiceStatusCard } from "./ServiceStatusCard";
+export { Spinner } from "./Spinner";
+export { Tooltip } from "./Tooltip";

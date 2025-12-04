@@ -149,8 +149,8 @@ function App() {
 
   return (
     <div className="w-full mx-auto font-sans min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 relative">
-      {/* 内容区域 */}
-      <div className="px-4 py-6 overflow-y-auto pb-24">
+      {/* 内容区域 - 添加响应式 padding 和 safe-area 支持 */}
+      <div className="px-4 py-6 overflow-y-auto pb-safe">
         {activeTab === "transfer" ? (
           <TransferTab
             isDiscovering={discovery.isDiscovering}

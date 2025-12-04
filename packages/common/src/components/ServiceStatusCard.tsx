@@ -1,5 +1,18 @@
 // 服务状态卡片组件（支持移动端和桌面端样式）
 
+import {
+  AlertTriangle,
+  Check,
+  Copy,
+  Lightbulb,
+  Play,
+  Plug,
+  Plus,
+  Square,
+} from "lucide-react";
+import { useState } from "react";
+import { Spinner } from "./Spinner";
+
 interface ServiceStatusCardProps {
   isDiscovering: boolean;
   deviceId: string;
@@ -25,10 +38,15 @@ export function ServiceStatusCard({
   children,
   variant = "mobile",
 }: ServiceStatusCardProps) {
+  const [copiedIp, setCopiedIp] = useState(false);
+  const [copiedId, setCopiedId] = useState(false);
   const isMobile = variant === "mobile";
   const padding = isMobile ? "p-5" : "p-6";
-  const margin = isMobile ? "mb-4" : "mb-6";
-  const shadow = isMobile ? "shadow-lg" : "shadow-xl";
+  const margin = isMobile ? "mb-5" : "mb-6";
+  // 为服务状态卡片添加更明显的视觉强调
+  const shadow = isMobile
+    ? "shadow-lg ring-1 ring-blue-100"
+    : "shadow-xl ring-1 ring-blue-200";
   const titleSize = isMobile ? "text-xl" : "text-2xl";
   const titleIconSize = isMobile ? "text-xl" : "text-2xl";
   const headerMargin = isMobile ? "mb-5" : "mb-6";
@@ -37,13 +55,13 @@ export function ServiceStatusCard({
     : "flex gap-3 mb-6 flex-wrap";
   const buttonClass = isMobile
     ? "w-full px-5 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 text-base"
-    : "px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2";
+    : "px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg hover:from-blue-600 hover:to-indigo-700 transform hover:scale-105 transition-all duration-200 flex items-center gap-2";
   const stopButtonClass = isMobile
     ? "w-full px-5 py-4 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 text-base"
-    : "px-6 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2";
+    : "px-6 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg hover:from-red-600 hover:to-pink-700 transform hover:scale-105 transition-all duration-200 flex items-center gap-2";
   const addButtonClass = isMobile
     ? "w-full px-5 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 text-base"
-    : "px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2";
+    : "px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg hover:from-green-600 hover:to-emerald-700 transform hover:scale-105 transition-all duration-200 flex items-center gap-2";
   const infoPadding = isMobile ? "p-3" : "p-4";
   const infoMargin = isMobile ? "mb-5" : "mb-6";
   const statusTextSize = isMobile ? "text-xs" : "text-sm";
@@ -59,7 +77,10 @@ export function ServiceStatusCard({
         <h2
           className={`${titleSize} font-bold text-gray-800 flex items-center gap-2`}
         >
-          <span className={titleIconSize}>🔌</span>
+          <Plug
+            className={isMobile ? "w-5 h-5" : "w-6 h-6"}
+            aria-hidden="true"
+          />
           服务状态
         </h2>
         {isDiscovering && (
@@ -76,27 +97,59 @@ export function ServiceStatusCard({
             onClick={onStart}
             disabled={isLoading}
             className={`${buttonClass} ${isLoading ? "opacity-60 cursor-not-allowed" : ""}`}
+            aria-label="启动服务"
+            aria-busy={isLoading}
           >
-            <span>{isLoading ? "⏳" : "▶"}</span>
-            {isLoading ? "启动中..." : "启动服务"}
+            {isLoading ? (
+              <>
+                <Spinner size="sm" className="text-white" />
+                <span>启动中...</span>
+              </>
+            ) : (
+              <>
+                <Play
+                  className={isMobile ? "w-5 h-5" : "w-4 h-4"}
+                  aria-hidden="true"
+                />
+                <span>启动服务</span>
+              </>
+            )}
           </button>
         ) : (
           <button
             onClick={onStop}
             disabled={isLoading}
             className={`${stopButtonClass} ${isLoading ? "opacity-60 cursor-not-allowed" : ""}`}
+            aria-label="停止服务"
+            aria-busy={isLoading}
           >
-            <span>{isLoading ? "⏳" : "⏹"}</span>
-            {isLoading ? "停止中..." : "停止服务"}
+            {isLoading ? (
+              <>
+                <Spinner size="sm" className="text-white" />
+                <span>停止中...</span>
+              </>
+            ) : (
+              <>
+                <Square
+                  className={isMobile ? "w-5 h-5" : "w-4 h-4"}
+                  aria-hidden="true"
+                />
+                <span>停止服务</span>
+              </>
+            )}
           </button>
         )}
         <button
           onClick={onAddDevice}
           disabled={isLoading}
           className={`${addButtonClass} ${isLoading ? "opacity-60 cursor-not-allowed" : ""}`}
+          aria-label="添加设备"
         >
-          <span>➕</span>
-          添加设备
+          <Plus
+            className={isMobile ? "w-5 h-5" : "w-4 h-4"}
+            aria-hidden="true"
+          />
+          <span>添加设备</span>
         </button>
       </div>
 
@@ -121,33 +174,35 @@ export function ServiceStatusCard({
                     IP: {localIp}:{defaultPort}
                   </p>
                   <button
-                    onClick={async (event) => {
+                    onClick={async () => {
                       const textToCopy = `${localIp}:${defaultPort}`;
                       try {
                         await navigator.clipboard.writeText(textToCopy);
-                        // 简单的反馈提示
-                        const btn = event.currentTarget as HTMLButtonElement;
-                        const originalText = btn.innerHTML;
-                        btn.innerHTML = "✓";
-                        btn.classList.add("text-green-600");
-                        setTimeout(() => {
-                          btn.innerHTML = originalText;
-                          btn.classList.remove("text-green-600");
-                        }, 1000);
+                        setCopiedIp(true);
+                        setTimeout(() => setCopiedIp(false), 1000);
                       } catch (err) {
                         console.error("复制失败:", err);
                       }
                     }}
                     className="px-2 py-1 text-gray-500 hover:text-gray-700 active:text-green-600 transition-colors"
                     title="复制IP地址"
+                    aria-label="复制IP地址"
                   >
-                    📋
+                    {copiedIp ? (
+                      <Check
+                        className="w-4 h-4 text-green-600"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <Copy className="w-4 h-4" aria-hidden="true" />
+                    )}
                   </button>
                 </div>
                 {localIp === "localhost" && isMobile && (
                   <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-[10px] text-yellow-800 font-medium mb-1">
-                      ⚠️ 模拟器环境检测
+                    <p className="text-[10px] text-yellow-800 font-medium mb-1 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" aria-hidden="true" />
+                      模拟器环境检测
                     </p>
                     <p className="text-[10px] text-yellow-700">
                       桌面端需要使用以下方式连接：
@@ -172,26 +227,27 @@ export function ServiceStatusCard({
                   ID: {deviceId}
                 </p>
                 <button
-                  onClick={async (event) => {
+                  onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(deviceId);
-                      // 简单的反馈提示
-                      const btn = event.currentTarget as HTMLButtonElement;
-                      const originalText = btn.innerHTML;
-                      btn.innerHTML = "✓";
-                      btn.classList.add("text-green-600");
-                      setTimeout(() => {
-                        btn.innerHTML = originalText;
-                        btn.classList.remove("text-green-600");
-                      }, 1000);
+                      setCopiedId(true);
+                      setTimeout(() => setCopiedId(false), 1000);
                     } catch (err) {
                       console.error("复制失败:", err);
                     }
                   }}
                   className="px-2 py-1 text-gray-500 hover:text-gray-700 active:text-green-600 transition-colors"
                   title="复制设备ID"
+                  aria-label="复制设备ID"
                 >
-                  📋
+                  {copiedId ? (
+                    <Check
+                      className="w-4 h-4 text-green-600"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Copy className="w-4 h-4" aria-hidden="true" />
+                  )}
                 </button>
               </div>
             )}
@@ -207,8 +263,11 @@ export function ServiceStatusCard({
                 其他设备可以使用上述 IP 和端口添加此设备
               </p>
               <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className={`${hintTextSize} text-blue-800 font-medium mb-1`}>
-                  💡 连接模拟器中的移动端
+                <p
+                  className={`${hintTextSize} text-blue-800 font-medium mb-1 flex items-center gap-1`}
+                >
+                  <Lightbulb className="w-3 h-3" aria-hidden="true" />
+                  连接模拟器中的移动端
                 </p>
                 <p className={`${hintTextSize} text-blue-700`}>
                   如果移动端在 Android 模拟器中，请使用：

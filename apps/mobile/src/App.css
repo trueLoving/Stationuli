@@ -7,6 +7,39 @@
   .safe-area-inset-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
+
+  /* 内容区域的底部 padding，为底部导航栏留出空间 */
+  .pb-safe {
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* 底部导航栏安全区域适配 - 确保背景色完全填充到底部 */
+.bottom-nav-safe {
+  /* 确保导航栏背景色完全填充，包括安全区域 */
+  box-sizing: border-box;
+  margin-bottom: 0;
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .bottom-nav-safe {
+    /* 有安全区域时，添加 padding 让背景色填充安全区域 */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* 横屏适配 */
+@media (orientation: landscape) {
+  .pb-safe {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+
+  /* 横屏时使用更紧凑的布局 */
+  @media (max-height: 500px) {
+    .card-spacing {
+      margin-bottom: 1rem;
+    }
+  }
 }
 
 /* 优化滚动体验 */
@@ -14,4 +47,17 @@ html,
 body {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+}
+
+/* 响应式字体大小优化 */
+@media (max-width: 375px) {
+  .text-responsive-sm {
+    font-size: 0.75rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .text-responsive-lg {
+    font-size: 1rem;
+  }
 }

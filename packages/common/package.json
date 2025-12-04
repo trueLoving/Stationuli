@@ -1,6 +1,6 @@
 {
   "name": "stationuli-common",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
@@ -9,13 +9,14 @@
     "lint": "eslint src --ext .ts,.tsx"
   },
   "dependencies": {
+    "lucide-react": "^0.555.0",
     "zustand": "^4.5.0"
   },
   "devDependencies": {
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
-    "typescript": "^5.9.0",
-    "eslint": "^9.25.0"
+    "eslint": "^9.25.0",
+    "typescript": "^5.9.0"
   },
   "peerDependencies": {
     "react": "^19.0.0",

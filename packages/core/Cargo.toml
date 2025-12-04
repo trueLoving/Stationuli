@@ -2,6 +2,9 @@
 name = "stationuli-core"
 description = "Stationuli core library - P2P file transfer and device control"
 edition = "2024"
+version = "0.0.1"
+authors = ["trueLoving"]
+license = "BUSL-1.1"
 
 [lib]
 name = "stationuli_core"
@@ -32,4 +35,3 @@ tracing-subscriber = { workspace = true }
 
 [dev-dependencies]
 tokio-test = { workspace = true }
-
