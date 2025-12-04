@@ -4,8 +4,7 @@ import { File, FolderOpen, Save } from "lucide-react";
 import type { ReceivedFile } from "../types";
 
 // 根据文件扩展名获取文件类型图标
-function getFileIcon(fileName: string) {
-  const ext = fileName.split(".").pop()?.toLowerCase();
+function getFileIcon(_fileName: string) {
   return <File className="w-5 h-5 text-white" aria-hidden="true" />;
 }
 
@@ -23,7 +22,6 @@ export function FileCard({
   variant = "mobile",
 }: FileCardProps) {
   const isMobile = variant === "mobile";
-  const iconSize = isMobile ? "w-10 h-10 text-xl" : "w-12 h-12 text-2xl";
   const titleSize = isMobile ? "text-sm" : "";
   const pathSize = isMobile ? "text-xs" : "text-sm";
   const buttonClass = isMobile

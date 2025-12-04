@@ -8,6 +8,7 @@ interface FileSelectionCardProps {
   transferProgress: number;
   onSelectFile: () => void;
   onClearFile: () => void;
+  onFileDrop?: (file: File) => void;
 }
 
 export function FileSelectionCard(props: FileSelectionCardProps) {

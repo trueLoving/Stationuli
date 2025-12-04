@@ -249,9 +249,8 @@ function App() {
             // 但由于安全限制，无法直接获取完整路径
             // 这里我们提示用户使用文件选择器
             // 未来可以使用 Tauri 的拖拽事件 API 来获取完整路径
-            const arrayBuffer = await file.arrayBuffer();
+            await file.arrayBuffer();
             const fileName = file.name;
-            const fileSize = file.size;
 
             // 由于无法获取完整路径，我们提示用户
             // 实际应用中，应该使用 Tauri 的文件拖拽事件
@@ -262,7 +261,6 @@ function App() {
             console.error("处理拖拽文件失败:", error);
           }
         }}
-        variant="desktop"
       />
 
       <ReceivedFilesCard

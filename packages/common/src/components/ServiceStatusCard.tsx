@@ -48,7 +48,6 @@ export function ServiceStatusCard({
     ? "shadow-lg ring-1 ring-blue-100"
     : "shadow-xl ring-1 ring-blue-200";
   const titleSize = isMobile ? "text-xl" : "text-2xl";
-  const titleIconSize = isMobile ? "text-xl" : "text-2xl";
   const headerMargin = isMobile ? "mb-5" : "mb-6";
   const buttonContainerClass = isMobile
     ? "flex flex-col gap-3 mb-5"
@@ -273,7 +272,7 @@ export function ServiceStatusCard({
                   如果移动端在 Android 模拟器中，请使用：
                 </p>
                 <p className={`${hintTextSize} text-blue-700 mt-1 font-mono`}>
-                  localhost:8081
+                  127.0.0.1:8081
                 </p>
                 <p className={`${hintTextSize} text-blue-600 mt-1`}>
                   或使用 adb forward 端口转发

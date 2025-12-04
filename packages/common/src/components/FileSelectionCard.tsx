@@ -32,7 +32,6 @@ export function FileSelectionCard({
   const margin = isMobile ? "mb-5" : "mb-6";
   const shadow = isMobile ? "shadow-lg" : "shadow-xl";
   const titleSize = isMobile ? "text-xl" : "text-2xl";
-  const titleIconSize = isMobile ? "text-xl" : "text-2xl";
   const buttonClass = isMobile
     ? "w-full px-5 py-4 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 text-base"
     : "px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2";
@@ -106,37 +105,56 @@ export function FileSelectionCard({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {!isMobile && onFileDrop && (
+        {!isMobile && onFileDrop ? (
           <div
-            className={`mb-4 border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+            onClick={onSelectFile}
+            className={`border-2 border-dashed rounded-xl p-12 text-center transition-all cursor-pointer group ${
               isDragging
-                ? "border-purple-500 bg-purple-50"
-                : "border-gray-300 hover:border-purple-400 hover:bg-purple-50/50"
+                ? "border-purple-500 bg-purple-50 scale-[1.02]"
+                : "border-gray-300 hover:border-purple-400 hover:bg-purple-50/50 hover:shadow-md active:scale-[0.98]"
             }`}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelectFile();
+              }
+            }}
+            aria-label="拖拽文件到此处或点击选择文件"
           >
             <FolderOpen
-              className="w-12 h-12 mx-auto mb-4 text-gray-400"
+              className={`w-16 h-16 mx-auto mb-4 transition-colors ${
+                isDragging
+                  ? "text-purple-500"
+                  : "text-gray-400 group-hover:text-purple-500"
+              }`}
               aria-hidden="true"
             />
-            <p className="text-gray-600 mb-2 font-medium">
-              拖拽文件到此处或点击下方按钮选择
+            <p className="text-gray-700 mb-2 font-semibold text-lg">
+              拖拽文件到此处或点击选择
             </p>
-            <p className="text-sm text-gray-400">支持单个文件</p>
+            <p className="text-sm text-gray-500 mb-4">支持单个文件</p>
+            <div className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg font-medium shadow-sm group-hover:shadow-md transition-all pointer-events-none">
+              <FolderOpen className="w-4 h-4" aria-hidden="true" />
+              <span>选择文件</span>
+            </div>
           </div>
+        ) : (
+          <button
+            onClick={onSelectFile}
+            onKeyDown={handleKeyDown}
+            className={buttonClass}
+            aria-label="选择文件"
+            tabIndex={0}
+          >
+            <FolderOpen
+              className={isMobile ? "w-5 h-5" : "w-4 h-4"}
+              aria-hidden="true"
+            />
+            <span>选择文件</span>
+          </button>
         )}
-        <button
-          onClick={onSelectFile}
-          onKeyDown={handleKeyDown}
-          className={buttonClass}
-          aria-label="选择文件"
-          tabIndex={0}
-        >
-          <FolderOpen
-            className={isMobile ? "w-5 h-5" : "w-4 h-4"}
-            aria-hidden="true"
-          />
-          <span>选择文件</span>
-        </button>
         <input
           ref={fileInputRef}
           type="file"
