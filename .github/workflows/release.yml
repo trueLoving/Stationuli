@@ -9,10 +9,11 @@ on:
         required: true
         type: choice
         options:
+          - all
           - mac
           - windows
           - android
-        default: 'mac'
+        default: 'all'
       create_release:
         description: '是否创建 GitHub Release'
         required: true
@@ -21,7 +22,7 @@ on:
 
 jobs:
   build-mac:
-    if: ${{ inputs.target == 'mac' }}
+    if: ${{ inputs.target == 'mac' || inputs.target == 'all' }}
     permissions:
       contents: write
     strategy:
@@ -95,7 +96,7 @@ jobs:
           retention-days: 7
 
   build-windows:
-    if: ${{ inputs.target == 'windows' }}
+    if: ${{ inputs.target == 'windows' || inputs.target == 'all' }}
     permissions:
       contents: write
     runs-on: windows-latest
@@ -202,7 +203,7 @@ jobs:
           retention-days: 7
 
   build-android:
-    if: ${{ inputs.target == 'android' }}
+    if: ${{ inputs.target == 'android' || inputs.target == 'all' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -355,17 +356,17 @@ jobs:
           本次发布包含以下平台的构建产物：
           "
           
-          if [ "${{ inputs.target }}" == "mac" ]; then
+          if [ "${{ inputs.target }}" == "mac" ] || [ "${{ inputs.target }}" == "all" ]; then
             BODY="$BODY
           - macOS (ARM64 和 x86_64)"
           fi
           
-          if [ "${{ inputs.target }}" == "windows" ]; then
+          if [ "${{ inputs.target }}" == "windows" ] || [ "${{ inputs.target }}" == "all" ]; then
             BODY="$BODY
           - Windows (MSI 和 NSIS)"
           fi
           
-          if [ "${{ inputs.target }}" == "android" ]; then
+          if [ "${{ inputs.target }}" == "android" ] || [ "${{ inputs.target }}" == "all" ]; then
             BODY="$BODY
           - Android (APK)"
           fi
