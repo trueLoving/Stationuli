@@ -131,6 +131,24 @@ $RECYCLE.BIN/
 .Trash-*
 
 # ============================================
+# Testing
+# ============================================
+# Coverage reports
+coverage/
+**/coverage/
+*.lcov
+.nyc_output/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Vitest
+.vitest/
+vitest.config.ts.timestamp-*
+
+# ============================================
 # Project Specific
 # ============================================
 app-example
