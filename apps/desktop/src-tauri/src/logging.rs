@@ -1,15 +1,15 @@
-// 日志系统 - 将日志发送到前端界面
+// 日志系统 - 将日志发送到前端界面和控制台
 
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter};
 use tracing_subscriber::{filter::EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
-/// 初始化日志系统，将日志发送到前端界面
+/// 初始化日志系统，将日志发送到前端界面和控制台
 pub fn init_logging_to_ui(app: &AppHandle, device_type: &str) -> Result<(), String> {
   let app_handle = Arc::new(app.clone());
   let device_type = device_type.to_string();
 
-  // 创建自定义 writer
+  // 创建自定义 writer（用于UI输出）
   let app_clone = app_handle.clone();
   let device_type_clone = device_type.clone();
 
@@ -19,6 +19,7 @@ pub fn init_logging_to_ui(app: &AppHandle, device_type: &str) -> Result<(), Stri
     buffer: Vec::new(),
   };
 
+  // UI 日志层（发送到前端）
   let ui_layer = fmt::layer()
     .with_target(false)
     .with_thread_ids(false)
@@ -26,13 +27,22 @@ pub fn init_logging_to_ui(app: &AppHandle, device_type: &str) -> Result<(), Stri
     .with_line_number(false)
     .with_writer(writer);
 
+  // 控制台日志层（输出到标准输出）
+  let console_layer = fmt::layer()
+    .with_target(false)
+    .with_thread_ids(false)
+    .with_file(false)
+    .with_line_number(false)
+    .with_writer(std::io::stdout);
+
   // 设置日志级别
   let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
 
-  // 初始化订阅者
+  // 初始化订阅者，同时输出到UI和控制台
   tracing_subscriber::registry()
     .with(filter)
     .with(ui_layer)
+    .with(console_layer)
     .init();
 
   Ok(())
