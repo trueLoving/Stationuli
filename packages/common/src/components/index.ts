@@ -2,6 +2,7 @@
 
 export { AddDeviceDialog } from "./AddDeviceDialog";
 export { DeviceCard } from "./DeviceCard";
+export { DevTools } from "./DevTools";
 export { FileCard } from "./FileCard";
 export { FileSelectionCard } from "./FileSelectionCard";
 export { ReceivedFilesCard } from "./ReceivedFilesCard";

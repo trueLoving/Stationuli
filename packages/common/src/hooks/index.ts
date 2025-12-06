@@ -2,3 +2,4 @@
 
 export { useDiscovery } from "./useDiscovery";
 export { useFileTransfer } from "./useFileTransfer";
+export { useLogs } from "./useLogs";

@@ -3,6 +3,7 @@
 import { listen } from "@tauri-apps/api/event";
 import { Plus, Smartphone } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DevTools } from "stationuli-common/components";
 import * as deviceApi from "./api/device";
 import "./App.css";
 import { AddDeviceDialog } from "./components/AddDeviceDialog";
@@ -434,6 +435,9 @@ function App() {
         onClose={closeAddDeviceDialog}
         onAdd={handleAddDevice}
       />
+
+      {/* 开发工具 */}
+      <DevTools variant="desktop" />
     </div>
   );
 }
