@@ -52,24 +52,57 @@ export function useDiscovery({ deviceApi, defaultPort }: UseDiscoveryOptions) {
       setIsLoading(true);
 
       try {
+        console.log("[前端] 开始启动服务...");
+        const startTime = Date.now();
+
         await deviceApi.startDiscovery(defaultPort);
+
+        const discoveryDuration = Date.now() - startTime;
+        console.log(`[前端] 服务启动成功，耗时: ${discoveryDuration}ms`);
+
         setIsDiscovering(true);
 
         // 获取设备 ID
-        const id = await deviceApi.getDeviceId();
-        setDeviceId(id);
+        try {
+          const id = await deviceApi.getDeviceId();
+          setDeviceId(id);
+          console.log("[前端] 设备 ID 获取成功:", id);
+        } catch (error) {
+          console.error("[前端] 获取设备 ID 失败:", error);
+        }
 
         // 获取本地 IP 地址
         try {
           const ip = await deviceApi.getLocalIp();
           setLocalIp(ip);
+          console.log("[前端] 本地 IP 获取成功:", ip);
         } catch (error) {
-          console.error("Failed to get local IP:", error);
+          console.error("[前端] 获取本地 IP 失败:", error);
           setLocalIp("未知");
         }
       } catch (error) {
-        console.error("Failed to start service:", error);
-        alert(`启动服务失败: ${error}`);
+        const errorMsg = String(error);
+        const errorDetails = {
+          error,
+          message: errorMsg,
+          type: error instanceof Error ? error.constructor.name : typeof error,
+          timestamp: new Date().toISOString(),
+          stack: error instanceof Error ? error.stack : undefined,
+        };
+
+        console.error("[前端] 启动服务失败，错误详情:", errorDetails);
+        console.error("[前端] 错误原因分析:", {
+          isPortInUse: errorMsg.includes("port") || errorMsg.includes("端口"),
+          isPermissionError:
+            errorMsg.includes("permission") || errorMsg.includes("权限"),
+          errorMessage: errorMsg,
+          possibleReasons:
+            errorMsg.includes("port") || errorMsg.includes("端口")
+              ? ["端口可能已被占用", "请检查是否有其他服务在使用该端口"]
+              : ["未知错误，请查看后端日志"],
+        });
+
+        alert(`启动服务失败: ${errorMsg}`);
         setIsDiscovering(false);
       } finally {
         isStartingRef.current = false;
@@ -105,11 +138,28 @@ export function useDiscovery({ deviceApi, defaultPort }: UseDiscoveryOptions) {
 
       try {
         // 添加超时保护，防止无限等待
+        // 后端超时是60秒，这里设置为65秒，给后端一些缓冲时间
         const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error("停止服务超时（5秒）")), 5000);
+          setTimeout(() => {
+            const timeoutError = new Error("停止服务超时（65秒）");
+            console.error("[前端] 停止服务超时错误详情:", {
+              error: timeoutError,
+              message: "前端等待后端响应超时（65秒）",
+              reason: "后端可能在60秒时已超时，但前端仍在等待响应",
+              timestamp: new Date().toISOString(),
+              stack: timeoutError.stack,
+            });
+            reject(timeoutError);
+          }, 65000);
         });
 
+        console.log("[前端] 开始停止服务，等待后端响应...");
+        const startTime = Date.now();
+
         await Promise.race([deviceApi.stopDiscovery(), timeoutPromise]);
+
+        const duration = Date.now() - startTime;
+        console.log(`[前端] 停止服务成功，耗时: ${duration}ms`);
 
         // 成功停止后更新状态
         setIsDiscovering(false);
@@ -117,8 +167,31 @@ export function useDiscovery({ deviceApi, defaultPort }: UseDiscoveryOptions) {
         setDeviceId("");
         setLocalIp("");
       } catch (error) {
-        console.error("Failed to stop service:", error);
         const errorMsg = String(error);
+        const errorDetails = {
+          error,
+          message: errorMsg,
+          type: error instanceof Error ? error.constructor.name : typeof error,
+          timestamp: new Date().toISOString(),
+          stack: error instanceof Error ? error.stack : undefined,
+        };
+
+        console.error("[前端] 停止服务失败，错误详情:", errorDetails);
+        console.error("[前端] 错误原因分析:", {
+          isTimeout: errorMsg.includes("超时"),
+          isNetworkError:
+            errorMsg.includes("network") || errorMsg.includes("连接"),
+          errorMessage: errorMsg,
+          possibleReasons: errorMsg.includes("超时")
+            ? [
+                "后端服务停止操作耗时超过60秒",
+                "后端可能正在等待资源释放",
+                "网络通信延迟",
+                "后端服务可能已卡住",
+              ]
+            : ["未知错误，请查看后端日志"],
+        });
+
         alert(`停止服务失败: ${errorMsg}`);
 
         // 即使出错，也尝试更新状态，避免界面卡住

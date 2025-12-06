@@ -13,37 +13,153 @@ pub async fn start_discovery(
   state: State<'_, AppState>,
   app: AppHandle,
 ) -> Result<String, String> {
+  use tracing::info;
+
+  info!("🚀 启动服务 (端口: {})", port);
+  println!("[DESKTOP] 🚀 启动服务 (端口: {})", port);
+
   // 先停止旧的服务和 TCP listener（如果存在）
   if let Some(mut discovery) = state.inner().discovery.write().await.take() {
-    discovery
-      .stop()
-      .await
-      .map_err(|e| format!("Failed to stop old service: {}", e))?;
-    // 等待任务完全停止
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-  }
-  // 清理 TCP listener（这会触发文件接收任务检测到 listener 不存在并退出循环）
-  let _ = state.inner().tcp_listener.write().await.take();
+    info!("🔄 检测到旧服务，正在停止...");
+    println!("[DESKTOP] 🔄 检测到旧服务，正在停止...");
+    // 使用超时保护，防止卡住
+    // 设置超时时间为1分钟，确保有足够时间清理资源
+    let stop_result =
+      tokio::time::timeout(tokio::time::Duration::from_secs(60), discovery.stop()).await;
 
-  // 等待更长时间，确保资源完全释放
+    match stop_result {
+      Ok(Ok(())) => {
+        info!("✅ 旧服务已停止");
+        println!("[DESKTOP] ✅ 旧服务已停止");
+      }
+      Ok(Err(e)) => {
+        let err_msg = format!("停止旧服务时出错: {}，继续清理资源", e);
+        info!("⚠️ {}", err_msg);
+        eprintln!("[DESKTOP] ⚠️ {}", err_msg);
+      }
+      Err(_) => {
+        let timeout_msg = "停止旧服务超时，强制清理资源";
+        info!("⚠️ {}", timeout_msg);
+        eprintln!("[DESKTOP] ⚠️ {}", timeout_msg);
+      }
+    }
+  }
+
+  // 清理 TCP listener（这会触发文件接收任务检测到 listener 不存在并退出循环）
+  info!("🔹 清理旧的 TCP Listener...");
+  println!("[DESKTOP] 🔹 清理旧的 TCP Listener...");
+
+  // 尝试获取写锁清理 TCP Listener（带超时）
+  let cleanup_result = tokio::time::timeout(
+    tokio::time::Duration::from_secs(5),
+    state.inner().tcp_listener.write(),
+  )
+  .await;
+
+  match cleanup_result {
+    Ok(mut guard) => {
+      let old_listener = guard.take();
+      drop(guard);
+      if old_listener.is_some() {
+        info!("✅ 旧的 TCP Listener 已清理");
+        println!("[DESKTOP] ✅ 旧的 TCP Listener 已清理");
+      } else {
+        info!("ℹ️  没有旧的 TCP Listener 需要清理");
+        println!("[DESKTOP] ℹ️  没有旧的 TCP Listener 需要清理");
+      }
+    }
+    Err(_) => {
+      let timeout_msg = "⚠️  清理旧的 TCP Listener 超时（5秒）";
+      let detailed_msg = format!(
+        "{} - 可能原因：文件接收任务正在阻塞等待连接（accept()），持有读锁无法释放",
+        timeout_msg
+      );
+      info!("{}", detailed_msg);
+      eprintln!("[DESKTOP] {}", detailed_msg);
+      println!("[DESKTOP] {}", detailed_msg);
+      info!("⚠️  强制继续：尝试直接绑定新端口（如果端口被占用会失败）");
+      println!("[DESKTOP] ⚠️  强制继续：尝试直接绑定新端口（如果端口被占用会失败）");
+      // 注意：这里无法获取写锁，但我们可以尝试继续启动，如果端口被占用会失败
+    }
+  }
+
+  // 等待更长时间，确保文件接收任务检测到 listener 不存在并退出循环
+  info!("⏳ 等待文件接收任务退出（500ms）...");
+  println!("[DESKTOP] ⏳ 等待文件接收任务退出（500ms）...");
   tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
 
   // 启动新的服务（只获取本地IP，不启动自动发现）
   let mut discovery = MdnsDiscovery::new(port);
   discovery.set_device_type("desktop".to_string());
-  discovery
-    .start()
-    .await
-    .map_err(|e| format!("Failed to start service: {}", e))?;
+  discovery.start().await.map_err(|e| {
+    let err_msg = format!("Failed to start service: {}", e);
+    info!("❌ {}", err_msg);
+    eprintln!("[DESKTOP] ❌ {}", err_msg);
+    err_msg
+  })?;
 
   *state.inner().discovery.write().await = Some(discovery);
+  info!("✅ 设备发现服务已启动");
+  println!("[DESKTOP] ✅ 设备发现服务已启动");
 
   // 启动 TCP 服务器监听文件接收
-  let listener = TcpConnection::listen(port)
-    .await
-    .map_err(|e| format!("Failed to start TCP listener: {}", e))?;
+  info!("📡 启动 TCP 监听器 (端口: {})...", port);
+  println!("[DESKTOP] 📡 启动 TCP 监听器 (端口: {})...", port);
+
+  // 如果之前的清理失败，端口可能还被占用，这里会失败
+  // 如果失败，尝试再次强制清理并重试
+  let listener_result = TcpConnection::listen(port).await;
+
+  let listener = match listener_result {
+    Ok(listener) => listener,
+    Err(e) => {
+      let err_msg = format!("Failed to start TCP listener: {}", e);
+      info!("❌ {}", err_msg);
+      eprintln!("[DESKTOP] ❌ {}", err_msg);
+
+      // 如果端口被占用，尝试再次强制清理
+      if err_msg.contains("address already in use")
+        || err_msg.contains("端口")
+        || err_msg.contains("Address already in use")
+        || err_msg.contains("already bound")
+      {
+        info!("⚠️  端口可能仍被占用，尝试强制清理...");
+        println!("[DESKTOP] ⚠️  端口可能仍被占用，尝试强制清理...");
+
+        // 再次尝试清理（不等待超时，直接尝试）
+        let force_cleanup = tokio::time::timeout(
+          tokio::time::Duration::from_secs(1),
+          state.inner().tcp_listener.write(),
+        )
+        .await;
+
+        if let Ok(mut guard) = force_cleanup {
+          let _ = guard.take();
+          drop(guard);
+          info!("✅ 强制清理完成，等待端口释放（1秒）...");
+          println!("[DESKTOP] ✅ 强制清理完成，等待端口释放（1秒）...");
+          tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+        }
+
+        // 重试绑定端口
+        info!("🔄 重试绑定端口 {}...", port);
+        println!("[DESKTOP] 🔄 重试绑定端口 {}...", port);
+        TcpConnection::listen(port).await.map_err(|e2| {
+          let err_msg2 = format!("重试绑定端口失败: {} (原始错误: {})", e2, e);
+          info!("❌ {}", err_msg2);
+          eprintln!("[DESKTOP] ❌ {}", err_msg2);
+          println!("[DESKTOP] ❌ {}", err_msg2);
+          err_msg2
+        })?
+      } else {
+        return Err(err_msg);
+      }
+    }
+  };
 
   *state.inner().tcp_listener.write().await = Some(listener);
+  info!("✅ TCP 监听器已启动 (端口: {})", port);
+  println!("[DESKTOP] ✅ TCP 监听器已启动 (端口: {})", port);
 
   // 启动文件接收任务
   start_file_receiver_task(
@@ -51,7 +167,11 @@ pub async fn start_discovery(
     state.inner().file_transfer.clone(),
     app.clone(),
   );
+  info!("✅ 文件接收任务已启动");
+  println!("[DESKTOP] ✅ 文件接收任务已启动");
 
+  info!("🎉 服务启动完成 (端口: {})", port);
+  println!("[DESKTOP] 🎉 服务启动完成 (端口: {})", port);
   Ok("Service started".to_string())
 }
 
@@ -61,38 +181,155 @@ pub async fn stop_discovery(state: State<'_, AppState>) -> Result<(), String> {
   use tracing::info;
 
   info!("🛑 停止服务");
+  println!("[DESKTOP] 🛑 停止服务");
 
   // 停止服务（使用超时保护，防止卡住）
-  let stop_result = tokio::time::timeout(tokio::time::Duration::from_secs(3), async {
+  // 设置超时时间为1分钟，确保有足够时间清理资源
+  info!("📋 开始停止服务，需要清理以下资源：");
+  info!("  1. MdnsDiscovery (设备发现服务)");
+  info!("     - mDNS 服务注册");
+  info!("     - 发现任务");
+  info!("     - 广播任务");
+  info!("     - 设备列表");
+  info!("     - mDNS 响应器");
+  info!("     - 本地 IP 缓存");
+  info!("  2. TCP Listener (TCP 监听器)");
+  info!("  3. 文件接收任务 (通过清理 TCP Listener 触发退出)");
+  println!("[DESKTOP] 📋 开始停止服务，需要清理的资源：MdnsDiscovery, TCP Listener, 文件接收任务");
+
+  let stop_result = tokio::time::timeout(tokio::time::Duration::from_secs(60), async {
+    // 步骤1: 停止 MdnsDiscovery
+    info!("🔹 Step 1: 停止 MdnsDiscovery...");
+    println!("[DESKTOP] 🔹 Step 1: 停止 MdnsDiscovery...");
+
     if let Some(mut discovery) = state.inner().discovery.write().await.take() {
-      discovery
-        .stop()
-        .await
-        .map_err(|e| format!("Failed to stop discovery: {}", e))?;
-      info!("✅ 设备发现服务已停止");
+      discovery.stop().await.map_err(|e| {
+        let err_msg = format!("停止 MdnsDiscovery 失败: {}", e);
+        info!("❌ {}", err_msg);
+        eprintln!("[DESKTOP] ❌ {}", err_msg);
+        println!("[DESKTOP] ❌ {}", err_msg);
+        err_msg
+      })?;
+      info!("✅ MdnsDiscovery 已停止");
+      println!("[DESKTOP] ✅ MdnsDiscovery 已停止");
+    } else {
+      info!("ℹ️  没有运行中的 MdnsDiscovery 需要停止");
+      println!("[DESKTOP] ℹ️  没有运行中的 MdnsDiscovery 需要停止");
     }
+
     Ok::<(), String>(())
   })
   .await;
 
   match stop_result {
-    Ok(Ok(())) => {}
-    Ok(Err(e)) => return Err(e),
+    Ok(Ok(())) => {
+      info!("✅ Step 1 完成: MdnsDiscovery 已正常停止");
+      println!("[DESKTOP] ✅ Step 1 完成: MdnsDiscovery 已正常停止");
+    }
+    Ok(Err(e)) => {
+      let err_msg = format!("Step 1 失败: 停止 MdnsDiscovery 时出错: {}", e);
+      info!("⚠️ {}", err_msg);
+      eprintln!("[DESKTOP] ⚠️ {}", err_msg);
+      println!("[DESKTOP] ⚠️ {}", err_msg);
+      info!("⚠️  继续执行后续清理步骤...");
+      println!("[DESKTOP] ⚠️  继续执行后续清理步骤...");
+      // 即使出错，也继续清理资源
+      let _ = state.inner().discovery.write().await.take();
+    }
     Err(_) => {
-      info!("⚠️ 停止服务超时，强制清理资源");
+      let timeout_msg = "Step 1 超时: 停止 MdnsDiscovery 超时（60秒）";
+      let detailed_msg = format!(
+        "{} - 可能原因：1) discovery.stop() 操作耗时过长 2) 资源未及时释放 3) 网络或系统延迟 4) 任务无法正常终止",
+        timeout_msg
+      );
+      info!("⚠️ {}", timeout_msg);
+      eprintln!("[DESKTOP] ⚠️ {}", detailed_msg);
+      println!("[DESKTOP] ⚠️ {}", detailed_msg);
+      info!("⚠️  强制清理 MdnsDiscovery 并继续执行后续步骤...");
+      println!("[DESKTOP] ⚠️  强制清理 MdnsDiscovery 并继续执行后续步骤...");
       // 即使超时，也清理资源
       let _ = state.inner().discovery.write().await.take();
     }
   }
 
-  // 清理 TCP listener（这会触发文件接收任务检测到 listener 不存在并退出循环）
-  let _ = state.inner().tcp_listener.write().await.take();
-  info!("✅ TCP 监听器已清理");
+  // 步骤2: 清理 TCP listener（这会触发文件接收任务检测到 listener 不存在并退出循环）
+  info!("🔹 Step 2: 清理 TCP Listener...");
+  println!("[DESKTOP] 🔹 Step 2: 清理 TCP Listener...");
 
-  // 等待一小段时间，确保所有任务完全停止
-  tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+  // 先尝试获取读锁检查状态（带超时）
+  info!("  → 检查 TCP Listener 状态...");
+  println!("[DESKTOP]   → 检查 TCP Listener 状态...");
+  let check_result = tokio::time::timeout(
+    tokio::time::Duration::from_secs(2),
+    state.inner().tcp_listener.read(),
+  )
+  .await;
 
-  info!("✅ 服务已完全停止");
+  match check_result {
+    Ok(guard) => {
+      let has_listener = guard.is_some();
+      drop(guard);
+      if has_listener {
+        info!("  → TCP Listener 存在，尝试获取写锁清理...");
+        println!("[DESKTOP]   → TCP Listener 存在，尝试获取写锁清理...");
+      } else {
+        info!("  → TCP Listener 不存在，无需清理");
+        println!("[DESKTOP]   → TCP Listener 不存在，无需清理");
+      }
+    }
+    Err(_) => {
+      info!("  ⚠️  检查 TCP Listener 状态超时（2秒），可能被文件接收任务持有读锁");
+      println!("[DESKTOP]   ⚠️  检查 TCP Listener 状态超时（2秒），可能被文件接收任务持有读锁");
+      info!("  → 继续尝试获取写锁...");
+      println!("[DESKTOP]   → 继续尝试获取写锁...");
+    }
+  }
+
+  // 尝试获取写锁（带超时），如果文件接收任务正在阻塞等待连接，这里可能会超时
+  info!("  → 尝试获取写锁（超时时间：5秒）...");
+  println!("[DESKTOP]   → 尝试获取写锁（超时时间：5秒）...");
+  let write_result = tokio::time::timeout(
+    tokio::time::Duration::from_secs(5),
+    state.inner().tcp_listener.write(),
+  )
+  .await;
+
+  match write_result {
+    Ok(mut guard) => {
+      let tcp_listener_result = guard.take();
+      drop(guard);
+      if tcp_listener_result.is_some() {
+        info!("✅ TCP Listener 已清理（文件接收任务将检测到并退出）");
+        println!("[DESKTOP] ✅ TCP Listener 已清理（文件接收任务将检测到并退出）");
+      } else {
+        info!("ℹ️  没有运行中的 TCP Listener 需要清理");
+        println!("[DESKTOP] ℹ️  没有运行中的 TCP Listener 需要清理");
+      }
+    }
+    Err(_) => {
+      let timeout_msg = "⚠️  获取 TCP Listener 写锁超时（5秒）";
+      let detailed_msg = format!(
+        "{} - 原因分析：文件接收任务可能正在阻塞等待连接（accept()），持有读锁无法释放",
+        timeout_msg
+      );
+      info!("{}", detailed_msg);
+      eprintln!("[DESKTOP] {}", detailed_msg);
+      println!("[DESKTOP] {}", detailed_msg);
+      info!("⚠️  强制继续：文件接收任务会在下次循环时检测到 listener 为 None 并退出");
+      println!("[DESKTOP] ⚠️  强制继续：文件接收任务会在下次循环时检测到 listener 为 None 并退出");
+      // 注意：这里无法获取写锁，但我们可以继续，因为文件接收任务会在下次循环时检测到 listener 为 None
+    }
+  }
+
+  // 步骤3: 等待文件接收任务退出
+  info!("🔹 Step 3: 等待文件接收任务退出（最多等待500ms）...");
+  println!("[DESKTOP] 🔹 Step 3: 等待文件接收任务退出（最多等待500ms）...");
+  tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+  info!("✅ 已等待文件接收任务退出");
+  println!("[DESKTOP] ✅ 已等待文件接收任务退出");
+
+  info!("========== ✅ 服务已完全停止 ==========");
+  println!("[DESKTOP] ========== ✅ 服务已完全停止 ==========");
   Ok(())
 }
 

@@ -95,31 +95,75 @@ impl MdnsDiscovery {
 
   /// 停止服务（简化版）
   pub async fn stop(&mut self) -> Result<()> {
-    info!("Stopping service");
+    let device_type_upper = self.device_type.to_uppercase();
+    info!(
+      "========== [{}] Stopping service ==========",
+      device_type_upper
+    );
 
-    // 取消服务注册（如果存在）
+    // 步骤1: 取消服务注册（如果存在）
+    info!(
+      "[{}] Step 1: Stopping mDNS service registration...",
+      device_type_upper
+    );
     if let Some(service) = self.service_registration.take() {
       drop(service);
+      info!(
+        "[{}] ✅ mDNS service registration stopped",
+        device_type_upper
+      );
+    } else {
+      info!(
+        "[{}] ℹ️  No mDNS service registration to stop",
+        device_type_upper
+      );
     }
 
-    // 取消发现任务（如果存在）
+    // 步骤2: 取消发现任务（如果存在）
+    info!("[{}] Step 2: Stopping discovery task...", device_type_upper);
     if let Some(handle) = self.discovery_handle.take() {
       handle.abort();
+      info!("[{}] ✅ Discovery task aborted", device_type_upper);
+    } else {
+      info!("[{}] ℹ️  No discovery task to stop", device_type_upper);
     }
 
-    // 取消广播任务（如果存在）
+    // 步骤3: 取消广播任务（如果存在）
+    info!("[{}] Step 3: Stopping broadcast task...", device_type_upper);
     if let Some(handle) = self.broadcast_handle.take() {
       handle.abort();
+      info!("[{}] ✅ Broadcast task aborted", device_type_upper);
+    } else {
+      info!("[{}] ℹ️  No broadcast task to stop", device_type_upper);
     }
 
-    // 清理设备列表（使用异步写操作）
+    // 步骤4: 清理设备列表（使用异步写操作）
+    info!("[{}] Step 4: Clearing device list...", device_type_upper);
+    let device_count = self.devices.read().await.len();
     self.devices.write().await.clear();
+    info!(
+      "[{}] ✅ Device list cleared (removed {} devices)",
+      device_type_upper, device_count
+    );
 
-    // 清理响应器（如果存在）
+    // 步骤5: 清理响应器（如果存在）
+    info!("[{}] Step 5: Stopping mDNS responder...", device_type_upper);
     if let Some(responder) = self.responder.take() {
       drop(responder);
+      info!("[{}] ✅ mDNS responder stopped", device_type_upper);
+    } else {
+      info!("[{}] ℹ️  No mDNS responder to stop", device_type_upper);
     }
 
+    // 步骤6: 清理本地 IP 缓存
+    info!("[{}] Step 6: Clearing local IP cache...", device_type_upper);
+    *self.local_ip.write().await = None;
+    info!("[{}] ✅ Local IP cache cleared", device_type_upper);
+
+    info!(
+      "========== [{}] Service stopped successfully ==========",
+      device_type_upper
+    );
     Ok(())
   }
 
