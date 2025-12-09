@@ -5,6 +5,8 @@ import type { ReceivedFile } from "../types";
 interface ReceivedFilesCardProps {
   receivedFiles: ReceivedFile[];
   onSave: (file: ReceivedFile) => void;
+  onDelete: (file: ReceivedFile) => void;
+  variant: "mobile" | "desktop";
 }
 
 export function ReceivedFilesCard(props: ReceivedFilesCardProps) {

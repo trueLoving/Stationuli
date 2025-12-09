@@ -10,8 +10,8 @@ use tauri::Manager;
 
 // 导入 API 命令
 use api::device::{
-  add_device, get_device_id, get_devices, get_local_ip, start_discovery, stop_discovery,
-  test_connection,
+  add_device, get_device_id, get_devices, get_local_ip, remove_device, start_discovery,
+  stop_discovery, test_connection, update_device,
 };
 use api::file::{get_file_size, save_received_file, send_file};
 use logging::init_logging_to_ui;
@@ -39,6 +39,8 @@ pub fn run() {
       stop_discovery,
       get_devices,
       add_device,
+      remove_device,
+      update_device,
       get_device_id,
       get_local_ip,
       test_connection,

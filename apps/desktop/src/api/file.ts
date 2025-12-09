@@ -3,15 +3,23 @@
 import { invoke } from "@tauri-apps/api/core";
 
 /**
- * 选择文件
+ * 选择文件（支持多选）
  */
-export async function selectFile(): Promise<string | null> {
+export async function selectFile(
+  multiple: boolean = false
+): Promise<string | string[] | null> {
   const { open } = await import("@tauri-apps/plugin-dialog");
   const selected = await open({
-    multiple: false,
+    multiple,
     directory: false,
   });
-  return selected && typeof selected === "string" ? selected : null;
+  if (!selected) {
+    return null;
+  }
+  if (multiple) {
+    return Array.isArray(selected) ? selected : [];
+  }
+  return typeof selected === "string" ? selected : null;
 }
 
 /**

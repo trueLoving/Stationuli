@@ -2,11 +2,13 @@
 
 import { Download, Inbox } from "lucide-react";
 import type { ReceivedFile } from "../types";
+import { EmptyState } from "./EmptyState";
 import { FileCard } from "./FileCard";
 
 interface ReceivedFilesCardProps {
   receivedFiles: ReceivedFile[];
   onSave: (file: ReceivedFile) => void;
+  onDelete?: (file: ReceivedFile) => void;
   onOpenLocation?: (file: ReceivedFile) => void;
   variant?: "mobile" | "desktop";
 }
@@ -14,6 +16,7 @@ interface ReceivedFilesCardProps {
 export function ReceivedFilesCard({
   receivedFiles,
   onSave,
+  onDelete,
   onOpenLocation,
   variant = "mobile",
 }: ReceivedFilesCardProps) {
@@ -49,21 +52,12 @@ export function ReceivedFilesCard({
         )}
       </h2>
       {receivedFiles.length === 0 ? (
-        <div className={`text-center ${emptyPadding}`}>
-          <div className={`flex justify-center ${isMobile ? "mb-3" : "mb-4"}`}>
-            <div
-              className={`${isMobile ? "w-16 h-16" : "w-20 h-20"} bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center`}
-            >
-              <Inbox
-                className={`${isMobile ? "w-8 h-8" : "w-10 h-10"} text-gray-400`}
-                aria-hidden="true"
-              />
-            </div>
-          </div>
-          <p className={`text-gray-500 ${emptyTextSize} font-medium`}>
-            暂无接收的文件
-          </p>
-        </div>
+        <EmptyState
+          icon={Inbox}
+          title="暂无接收的文件"
+          description="接收到的文件将显示在这里"
+          variant={variant}
+        />
       ) : (
         <div className="space-y-3">
           {receivedFiles.map((file, index) => (
@@ -71,6 +65,7 @@ export function ReceivedFilesCard({
               key={index}
               file={file}
               onSave={onSave}
+              onDelete={onDelete}
               onOpenLocation={onOpenLocation}
               variant={variant}
             />

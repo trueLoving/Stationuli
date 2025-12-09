@@ -415,31 +415,43 @@ pub async fn save_received_file(
 }
 
 /// 在 Android 上选择文件（使用 Android 文件选择器）
-/// 返回包含 URI 和文件名的 JSON 对象
+/// 返回包含 URI 和文件名的 JSON 对象数组（支持多选）
 #[tauri::command]
-pub async fn select_file_android(app: AppHandle) -> Result<Option<serde_json::Value>, String> {
+pub async fn select_file_android(
+  app: AppHandle,
+  multiple: Option<bool>,
+) -> Result<Option<Vec<serde_json::Value>>, String> {
   use tauri_plugin_android_fs::AndroidFsExt;
   use tracing::info;
 
   let api = app.android_fs_async();
+  let allow_multiple = multiple.unwrap_or(false);
 
-  info!("[MOBILE] Opening file picker dialog");
+  info!(
+    "[MOBILE] Opening file picker dialog (multiple: {})",
+    allow_multiple
+  );
 
   // 使用 file_picker().pick_files()
   let selected_files = api
     .file_picker()
     .pick_files(
-      None,     // 初始目录
-      &["*/*"], // 所有文件类型
-      false,    // 不允许多选
+      None,           // 初始目录
+      &["*/*"],       // 所有文件类型
+      allow_multiple, // 是否允许多选
     )
     .await
     .map_err(|e| format!("Failed to show file picker: {}", e))?;
 
-  if let Some(file_uri) = selected_files.first() {
+  if selected_files.is_empty() {
+    return Ok(None);
+  }
+
+  let mut result = Vec::new();
+  for file_uri in selected_files {
     // 重要：获取持久化URI权限，确保后续可以读取文件
     // 如果不获取持久化权限，URI的访问权限可能会在应用暂停或URI过期后失效
-    if let Err(e) = api.take_persistable_uri_permission(file_uri).await {
+    if let Err(e) = api.take_persistable_uri_permission(&file_uri).await {
       info!(
         "[MOBILE] Warning: Failed to take persistable URI permission: {:?}. File may not be accessible later.",
         e
@@ -451,14 +463,14 @@ pub async fn select_file_android(app: AppHandle) -> Result<Option<serde_json::Va
     }
 
     // 尝试获取文件名
-    let file_name = api.get_name(file_uri).await.ok().unwrap_or_else(|| {
+    let file_name = api.get_name(&file_uri).await.ok().unwrap_or_else(|| {
       // 如果无法获取文件名，尝试从 URI 中提取
       "未知文件".to_string()
     });
 
     // FileUri 需要转换为字符串
-    let uri_json =
-      serde_json::to_string(file_uri).map_err(|e| format!("Failed to serialize FileUri: {}", e))?;
+    let uri_json = serde_json::to_string(&file_uri)
+      .map_err(|e| format!("Failed to serialize FileUri: {}", e))?;
 
     let uri_value: serde_json::Value = serde_json::from_str(&uri_json)
       .map_err(|e| format!("Failed to parse FileUri JSON: {}", e))?;
@@ -494,13 +506,18 @@ pub async fn select_file_android(app: AppHandle) -> Result<Option<serde_json::Va
       uri_string, file_name
     );
 
-    // 返回包含 URI 和文件名的对象
-    Ok(Some(serde_json::json!({
+    // 添加到结果数组
+    result.push(serde_json::json!({
       "uri": uri_string,
       "name": file_name
-    })))
-  } else {
+    }));
+  }
+
+  if result.is_empty() {
     info!("[MOBILE] No file selected");
     Ok(None)
+  } else {
+    info!("[MOBILE] Selected {} file(s)", result.len());
+    Ok(Some(result))
   }
 }

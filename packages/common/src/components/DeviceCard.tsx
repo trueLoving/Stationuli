@@ -1,12 +1,24 @@
 // 设备卡片组件
 
-import { Globe, Laptop, Link2, Smartphone, Upload } from "lucide-react";
+import {
+  Edit,
+  Globe,
+  Laptop,
+  Link2,
+  Smartphone,
+  Trash2,
+  Upload,
+  Workflow,
+} from "lucide-react";
 import type { DeviceInfo } from "../types";
 
 interface DeviceCardProps {
   device: DeviceInfo;
   onTestConnection: (device: DeviceInfo) => void;
   onSendFile: (device: DeviceInfo) => void;
+  onOpenWorkspace?: (device: DeviceInfo) => void;
+  onEdit?: (device: DeviceInfo) => void;
+  onDelete?: (device: DeviceInfo) => void;
   showActions?: boolean;
   variant?: "mobile" | "desktop";
 }
@@ -15,6 +27,9 @@ export function DeviceCard({
   device,
   onTestConnection,
   onSendFile,
+  onOpenWorkspace,
+  onEdit,
+  onDelete,
   showActions = true,
   variant = "mobile",
 }: DeviceCardProps) {
@@ -80,12 +95,16 @@ export function DeviceCard({
         </div>
       </div>
       {showActions && (
-        <div className={isMobile ? "flex gap-2 w-full" : "ml-4 flex gap-2"}>
+        <div
+          className={
+            isMobile ? "flex gap-2 w-full flex-wrap" : "ml-4 flex gap-2"
+          }
+        >
           <button
             onClick={() => onTestConnection(device)}
             className={`${
               isMobile
-                ? "flex-1 px-3 py-3 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-1 text-xs"
+                ? "flex-1 min-w-[80px] px-3 py-3 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-1 text-xs"
                 : "px-4 py-3 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
             }`}
             title="测试连接"
@@ -101,17 +120,68 @@ export function DeviceCard({
             onClick={() => onSendFile(device)}
             className={`${
               isMobile
-                ? "flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 text-sm"
-                : "px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
+                ? "flex-1 min-w-[80px] px-3 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-1 text-xs"
+                : "px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
             }`}
-            aria-label="发送文件"
+            aria-label="文件传输"
           >
             <Upload
-              className={isMobile ? "w-4 h-4" : "w-5 h-5"}
+              className={isMobile ? "w-3 h-3" : "w-4 h-4"}
               aria-hidden="true"
             />
-            <span>发送文件</span>
+            {isMobile ? "文件" : "文件传输"}
           </button>
+          {onOpenWorkspace && (
+            <button
+              onClick={() => onOpenWorkspace(device)}
+              className={`${
+                isMobile
+                  ? "flex-1 min-w-[80px] px-3 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-1 text-xs"
+                  : "px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
+              }`}
+              aria-label="工作台"
+            >
+              <Workflow
+                className={isMobile ? "w-3 h-3" : "w-4 h-4"}
+                aria-hidden="true"
+              />
+              {isMobile ? "工作台" : "工作台"}
+            </button>
+          )}
+          {onEdit && (
+            <button
+              onClick={() => onEdit(device)}
+              className={`${
+                isMobile
+                  ? "px-3 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-1 text-xs"
+                  : "px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
+              }`}
+              aria-label="编辑设备"
+            >
+              <Edit
+                className={isMobile ? "w-3 h-3" : "w-4 h-4"}
+                aria-hidden="true"
+              />
+              {isMobile ? "编辑" : "编辑"}
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={() => onDelete(device)}
+              className={`${
+                isMobile
+                  ? "px-3 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-1 text-xs"
+                  : "px-4 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
+              }`}
+              aria-label="删除设备"
+            >
+              <Trash2
+                className={isMobile ? "w-3 h-3" : "w-4 h-4"}
+                aria-hidden="true"
+              />
+              {isMobile ? "删除" : "删除"}
+            </button>
+          )}
         </div>
       )}
     </div>

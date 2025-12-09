@@ -38,6 +38,7 @@ export function AddDeviceDialog({
   if (!isOpen) return null;
 
   const isMobile = variant === "mobile";
+  const isEditMode = !!deviceId;
 
   return (
     <div
@@ -209,7 +210,7 @@ export function AddDeviceDialog({
             onClick={onAdd}
             className={`flex-1 ${isMobile ? "px-4 py-3" : "px-6 py-3"} bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg active:shadow-md transition-all duration-200 ${isMobile ? "active:scale-95" : "transform hover:scale-[1.02]"} ${!isMobile ? "hover:from-green-600 hover:to-emerald-700" : ""}`}
           >
-            添加
+            {isEditMode ? "保存" : "添加"}
           </button>
         </div>
       </div>

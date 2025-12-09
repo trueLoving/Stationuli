@@ -363,6 +363,34 @@ pub async fn add_device(device: DeviceInfo, state: State<'_, AppState>) -> Resul
   }
 }
 
+/// 删除设备
+#[tauri::command]
+pub async fn remove_device(device_id: String, state: State<'_, AppState>) -> Result<(), String> {
+  let discovery_guard = state.inner().discovery.read().await;
+  if let Some(ref discovery) = *discovery_guard {
+    discovery
+      .remove_device(&device_id)
+      .await
+      .map_err(|e| e.to_string())
+  } else {
+    Err("Service not started".to_string())
+  }
+}
+
+/// 更新设备信息
+#[tauri::command]
+pub async fn update_device(device: DeviceInfo, state: State<'_, AppState>) -> Result<(), String> {
+  let discovery_guard = state.inner().discovery.read().await;
+  if let Some(ref discovery) = *discovery_guard {
+    discovery
+      .update_device(device)
+      .await
+      .map_err(|e| e.to_string())
+  } else {
+    Err("Service not started".to_string())
+  }
+}
+
 /// 获取设备 ID
 #[tauri::command]
 pub async fn get_device_id(state: State<'_, AppState>) -> Result<String, String> {

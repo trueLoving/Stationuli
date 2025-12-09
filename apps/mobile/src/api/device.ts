@@ -47,6 +47,20 @@ export async function addDevice(device: DeviceInfo): Promise<void> {
 }
 
 /**
+ * 删除设备
+ */
+export async function removeDevice(deviceId: string): Promise<void> {
+  return await invoke("remove_device", { deviceId });
+}
+
+/**
+ * 更新设备信息
+ */
+export async function updateDevice(device: DeviceInfo): Promise<void> {
+  return await invoke("update_device", { device });
+}
+
+/**
  * 测试连接
  */
 export async function testConnection(

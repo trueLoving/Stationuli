@@ -24,6 +24,12 @@ export const deviceApiAdapter: DeviceApi = {
   async addDevice(device: DeviceInfo): Promise<void> {
     return await deviceApi.addDevice(device);
   },
+  async removeDevice(deviceId: string): Promise<void> {
+    return await deviceApi.removeDevice(deviceId);
+  },
+  async updateDevice(device: DeviceInfo): Promise<void> {
+    return await deviceApi.updateDevice(device);
+  },
   async testConnection(
     targetAddress: string,
     targetPort: number

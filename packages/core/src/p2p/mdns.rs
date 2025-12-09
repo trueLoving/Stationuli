@@ -93,6 +93,35 @@ impl MdnsDiscovery {
     self.devices.write().await.insert(device.id.clone(), device);
   }
 
+  /// 删除设备
+  pub async fn remove_device(&self, device_id: &str) -> Result<()> {
+    let mut devices = self.devices.write().await;
+    if devices.remove(device_id).is_some() {
+      info!("Device removed: {}", device_id);
+      Ok(())
+    } else {
+      Err(crate::Error::NotFound(format!(
+        "Device not found: {}",
+        device_id
+      )))
+    }
+  }
+
+  /// 更新设备信息
+  pub async fn update_device(&self, device: DeviceInfo) -> Result<()> {
+    let mut devices = self.devices.write().await;
+    if devices.contains_key(&device.id) {
+      info!("Updating device: {:?}", device);
+      devices.insert(device.id.clone(), device);
+      Ok(())
+    } else {
+      Err(crate::Error::NotFound(format!(
+        "Device not found: {}",
+        device.id
+      )))
+    }
+  }
+
   /// 停止服务（简化版）
   pub async fn stop(&mut self) -> Result<()> {
     let device_type_upper = self.device_type.to_uppercase();

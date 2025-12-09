@@ -20,6 +20,9 @@ pub enum Error {
 
   #[error("Protocol error: {0}")]
   Protocol(String),
+
+  #[error("Not found: {0}")]
+  NotFound(String),
 }
 
 /// 核心结果类型

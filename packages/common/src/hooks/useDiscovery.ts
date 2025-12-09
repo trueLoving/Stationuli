@@ -256,6 +256,32 @@ export function useDiscovery({ deviceApi, defaultPort }: UseDiscoveryOptions) {
     };
   }, []);
 
+  const removeDevice = useCallback(
+    async (deviceId: string) => {
+      try {
+        await deviceApi.removeDevice(deviceId);
+        await refreshDevices();
+      } catch (error) {
+        console.error("Failed to remove device:", error);
+        throw error;
+      }
+    },
+    [deviceApi, refreshDevices]
+  );
+
+  const updateDevice = useCallback(
+    async (device: DeviceInfo) => {
+      try {
+        await deviceApi.updateDevice(device);
+        await refreshDevices();
+      } catch (error) {
+        console.error("Failed to update device:", error);
+        throw error;
+      }
+    },
+    [deviceApi, refreshDevices]
+  );
+
   return {
     devices,
     isDiscovering,
@@ -266,6 +292,8 @@ export function useDiscovery({ deviceApi, defaultPort }: UseDiscoveryOptions) {
     stopDiscovery,
     refreshDevices,
     addDevice,
+    removeDevice,
+    updateDevice,
     setDevices,
   };
 }

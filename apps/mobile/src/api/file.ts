@@ -3,15 +3,62 @@
 import { invoke } from "@tauri-apps/api/core";
 
 /**
- * 选择文件（Android 专用）
+ * 选择文件（Android 专用，支持多选）
  */
-export async function selectFileAndroid(): Promise<{
-  uri: string;
-  name: string;
-} | null> {
-  return await invoke<{ uri: string; name: string } | null>(
-    "select_file_android"
-  );
+export async function selectFileAndroid(multiple: boolean = false): Promise<
+  | {
+      uri: string;
+      name: string;
+    }
+  | { uri: string; name: string }[]
+  | null
+> {
+  const result = await invoke<
+    { uri: string; name: string } | { uri: string; name: string }[] | null
+  >("select_file_android", { multiple });
+  return result;
+}
+
+/**
+ * 选择文件（通用接口，支持多选）
+ */
+export async function selectFile(
+  multiple: boolean = false
+): Promise<string | string[] | null> {
+  try {
+    // 尝试使用 Android 专用文件选择器
+    const androidSelected = await selectFileAndroid(multiple);
+    if (!androidSelected) {
+      return null;
+    }
+
+    if (Array.isArray(androidSelected)) {
+      return androidSelected.map((f) => f.uri);
+    }
+
+    return androidSelected.uri;
+  } catch (error) {
+    // 如果 Android 专用选择器失败，回退到通用对话框
+    console.log(
+      "Android file picker not available, using generic dialog:",
+      error
+    );
+    const { open } = await import("@tauri-apps/plugin-dialog");
+    const selected = await open({
+      multiple,
+      directory: false,
+    });
+
+    if (!selected) {
+      return null;
+    }
+
+    if (multiple) {
+      return Array.isArray(selected) ? selected : [];
+    }
+
+    return typeof selected === "string" ? selected : null;
+  }
 }
 
 /**

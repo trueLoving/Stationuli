@@ -6,9 +6,13 @@ interface DeviceCardProps {
   device: DeviceInfo;
   onTestConnection: (device: DeviceInfo) => void;
   onSendFile: (device: DeviceInfo) => void;
+  onOpenWorkspace?: (device: DeviceInfo) => void;
   showActions?: boolean;
+  variant: "mobile" | "desktop";
+  onEdit?: (device: DeviceInfo) => void;
+  onDelete?: (device: DeviceInfo) => void;
 }
 
 export function DeviceCard(props: DeviceCardProps) {
-  return <DeviceCardCommon {...props} variant="mobile" />;
+  return <DeviceCardCommon {...props} variant={props.variant} />;
 }

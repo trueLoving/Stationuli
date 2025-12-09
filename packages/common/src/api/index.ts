@@ -10,6 +10,8 @@ export interface DeviceApi {
   getLocalIp(): Promise<string>;
   getDevices(): Promise<DeviceInfo[]>;
   addDevice(device: DeviceInfo): Promise<void>;
+  removeDevice(deviceId: string): Promise<void>;
+  updateDevice(device: DeviceInfo): Promise<void>;
   testConnection(targetAddress: string, targetPort: number): Promise<string>;
 }
 

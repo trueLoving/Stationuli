@@ -6,6 +6,9 @@ interface DeviceCardProps {
   device: DeviceInfo;
   onTestConnection: (device: DeviceInfo) => void;
   onSendFile: (device: DeviceInfo) => void;
+  onOpenWorkspace?: (device: DeviceInfo) => void;
+  onEdit?: (device: DeviceInfo) => void;
+  onDelete?: (device: DeviceInfo) => void;
   showActions?: boolean;
 }
 

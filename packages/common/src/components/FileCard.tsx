@@ -1,6 +1,6 @@
 // 文件卡片组件（支持移动端和桌面端样式）
 
-import { File, FolderOpen, Save } from "lucide-react";
+import { File, FolderOpen, Save, Trash2 } from "lucide-react";
 import type { ReceivedFile } from "../types";
 
 // 根据文件扩展名获取文件类型图标
@@ -11,6 +11,7 @@ function getFileIcon(_fileName: string) {
 interface FileCardProps {
   file: ReceivedFile;
   onSave: (file: ReceivedFile) => void;
+  onDelete?: (file: ReceivedFile) => void;
   onOpenLocation?: (file: ReceivedFile) => void;
   variant?: "mobile" | "desktop";
 }
@@ -18,6 +19,7 @@ interface FileCardProps {
 export function FileCard({
   file,
   onSave,
+  onDelete,
   onOpenLocation,
   variant = "mobile",
 }: FileCardProps) {
@@ -68,6 +70,31 @@ export function FileCard({
           />
           <span>保存到指定目录</span>
         </button>
+        {onDelete && (
+          <button
+            onClick={() => {
+              if (
+                confirm(
+                  `确定要删除文件记录 "${file.name}" 吗？\n注意：这只会删除记录，不会删除实际文件。`
+                )
+              ) {
+                onDelete(file);
+              }
+            }}
+            className={`${
+              isMobile
+                ? "w-full px-4 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 text-sm"
+                : "px-5 py-2.5 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
+            }`}
+            aria-label="删除文件记录"
+          >
+            <Trash2
+              className={isMobile ? "w-4 h-4" : "w-5 h-5"}
+              aria-hidden="true"
+            />
+            <span>删除记录</span>
+          </button>
+        )}
         {onOpenLocation && !isMobile && (
           <button
             onClick={() => onOpenLocation(file)}

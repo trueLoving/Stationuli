@@ -101,15 +101,16 @@ export function useFileTransfer({
   }, []);
 
   const sendFile = useCallback(
-    async (targetAddress: string, targetPort: number) => {
-      if (!selectedFile) {
+    async (targetAddress: string, targetPort: number, filePath?: string) => {
+      const fileToSend = filePath || selectedFile;
+      if (!fileToSend) {
         alert("请先选择要发送的文件");
         return;
       }
 
       try {
         setTransferProgress(0);
-        await fileApi.sendFile(selectedFile, targetAddress, targetPort);
+        await fileApi.sendFile(fileToSend, targetAddress, targetPort);
       } catch (error) {
         console.error("Failed to send file:", error);
         alert(`❌ 文件发送失败: ${error}`);
@@ -136,6 +137,12 @@ export function useFileTransfer({
     setReceivedFiles((prev) => [file, ...prev]);
   }, []);
 
+  const removeReceivedFile = useCallback((file: ReceivedFile) => {
+    setReceivedFiles((prev) =>
+      prev.filter((f) => f.path !== file.path || f.name !== file.name)
+    );
+  }, []);
+
   return {
     selectedFile,
     selectedFileName,
@@ -148,5 +155,6 @@ export function useFileTransfer({
     sendFile,
     saveReceivedFile,
     addReceivedFile,
+    removeReceivedFile,
   };
 }
