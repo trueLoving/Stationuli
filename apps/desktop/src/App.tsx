@@ -10,6 +10,7 @@ import { AddDeviceDialog } from "./components/AddDeviceDialog";
 import { DeviceCard } from "./components/DeviceCard";
 import { ReceivedFilesCard } from "./components/ReceivedFilesCard";
 import { ServiceStatusCard } from "./components/ServiceStatusCard";
+import { ProjectionControl } from "./components/ProjectionControl";
 import { useDiscovery } from "./hooks/useDiscovery";
 import { useFileTransfer } from "./hooks/useFileTransfer";
 import type { DeviceInfo } from "./types";
@@ -296,15 +297,19 @@ function App() {
                 </h2>
                 <div className="grid gap-3">
                   {discovery.devices.map((device: DeviceInfo) => (
-                    <DeviceCard
-                      key={device.id}
-                      device={device}
-                      onTestConnection={handleTestConnection}
-                      onSendFile={handleSendFile}
-                      onOpenWorkspace={handleOpenWorkspace}
-                      onEdit={handleEditDevice}
-                      onDelete={handleDeleteDevice}
-                    />
+                    <div key={device.id} className="space-y-2">
+                      <DeviceCard
+                        device={device}
+                        onTestConnection={handleTestConnection}
+                        onSendFile={handleSendFile}
+                        onOpenWorkspace={handleOpenWorkspace}
+                        onEdit={handleEditDevice}
+                        onDelete={handleDeleteDevice}
+                      />
+                      <div className="ml-20">
+                        <ProjectionControl device={device} />
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>

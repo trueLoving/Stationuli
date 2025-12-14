@@ -5,6 +5,7 @@
 pub mod crypto;
 pub mod file;
 pub mod p2p;
+pub mod projection;
 
 /// 核心错误类型
 #[derive(Debug, thiserror::Error)]
