@@ -27,11 +27,19 @@ x25519-dalek = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
+# 图像处理
+image = "0.24"
+base64 = "0.22"
+
 # 工具
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+
+# 屏幕捕获（仅非 Android 平台）
+[target.'cfg(not(target_os = "android"))'.dependencies]
+screenshots = "0.6"
 
 [dev-dependencies]
 tokio-test = { workspace = true }

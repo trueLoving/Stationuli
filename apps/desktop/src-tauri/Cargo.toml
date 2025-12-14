@@ -23,6 +23,9 @@ tauri-plugin-dialog = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
+# Base64 编码
+base64 = "0.22"
+
 # Stationuli 核心库
 stationuli-core = { path = "../../../packages/core" }
 
