@@ -2,6 +2,7 @@
 
 import type { FileApi } from "stationuli-common/api";
 import * as fileApi from "./file";
+import type { FileInfo } from "./file";
 
 export const fileApiAdapter: FileApi = {
   async selectFile(): Promise<string | null> {
@@ -26,10 +27,26 @@ export const fileApiAdapter: FileApi = {
   },
 };
 
-// Android 专用文件选择器
+// Android 专用文件选择器（旧版本，保持向后兼容）
 export async function selectFileAndroid(): Promise<{
   uri: string;
   name: string;
 } | null> {
   return await fileApi.selectFileAndroid();
+}
+
+// Android 专用文件选择器（增强版）
+export async function selectFileAndroidV2(
+  options?: fileApi.FileSelectOptions
+): Promise<FileInfo[] | null> {
+  return await fileApi.selectFileAndroidV2(options);
+}
+
+// 流式发送文件
+export async function sendFileStreaming(
+  fileInfo: FileInfo,
+  targetAddress: string,
+  targetPort: number
+): Promise<string> {
+  return await fileApi.sendFileStreaming(fileInfo, targetAddress, targetPort);
 }
