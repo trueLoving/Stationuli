@@ -14,7 +14,10 @@ use api::device::{
   add_device, get_device_id, get_devices, get_local_ip, remove_device, start_discovery,
   stop_discovery, test_connection, update_device,
 };
-use api::file::{get_file_name, get_file_size, save_received_file, select_file_android, send_file};
+use api::file::{
+  get_file_name, get_file_size, save_received_file, select_file_android, select_file_android_v2,
+  send_file, send_file_streaming,
+};
 use api::projection::{
   start_projection, start_receiving_projection, stop_projection, stop_receiving_projection,
 };
@@ -53,10 +56,12 @@ pub fn run() {
       test_connection,
       // 文件相关 API（对应前端 src/api/file.ts）
       send_file,
+      send_file_streaming,
       get_file_size,
       get_file_name,
       save_received_file,
       select_file_android,
+      select_file_android_v2,
       // 投影相关 API（对应前端 src/api/projection.ts）
       start_projection,
       stop_projection,

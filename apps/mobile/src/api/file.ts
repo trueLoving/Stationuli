@@ -3,6 +3,48 @@
 import { invoke } from "@tauri-apps/api/core";
 
 /**
+ * 权限状态
+ */
+export enum PermissionStatus {
+  /** 已获取持久化权限 */
+  Persistable = "Persistable",
+  /** 仅临时权限（需要重新获取） */
+  Temporary = "Temporary",
+  /** 权限未知或已失效 */
+  Unknown = "Unknown",
+}
+
+/**
+ * 文件信息结构（增强版）
+ */
+export interface FileInfo {
+  /** Content URI */
+  uri: string;
+  /** 文件名（包含扩展名） */
+  name: string;
+  /** 文件大小（字节） */
+  size: number;
+  /** MIME 类型 */
+  mime_type?: string;
+  /** 文件扩展名 */
+  extension?: string;
+  /** 权限状态 */
+  permission_status: PermissionStatus;
+}
+
+/**
+ * 文件选择选项
+ */
+export interface FileSelectOptions {
+  /** 是否允许多选 */
+  multiple?: boolean;
+  /** MIME 类型过滤（可选，默认所有类型） */
+  mime_types?: string[];
+  /** 最大文件大小限制（可选，字节） */
+  max_size?: number;
+}
+
+/**
  * 选择文件（Android 专用，支持多选）
  */
 export async function selectFileAndroid(multiple: boolean = false): Promise<
@@ -100,5 +142,39 @@ export async function saveReceivedFile(
   return await invoke<string>("save_received_file", {
     filePath,
     fileName,
+  });
+}
+
+/**
+ * 选择文件（Android 专用，增强版）
+ * 返回完整的 FileInfo 结构，包含文件大小、MIME类型、权限状态等
+ */
+export async function selectFileAndroidV2(
+  options?: FileSelectOptions
+): Promise<FileInfo[] | null> {
+  try {
+    const result = await invoke<FileInfo[] | null>("select_file_android_v2", {
+      options: options || {},
+    });
+    return result;
+  } catch (error) {
+    console.error("Failed to select file (v2):", error);
+    throw error;
+  }
+}
+
+/**
+ * 流式发送文件（避免大文件内存溢出）
+ * 使用 FileInfo 结构，支持流式读取和传输
+ */
+export async function sendFileStreaming(
+  fileInfo: FileInfo,
+  targetAddress: string,
+  targetPort: number
+): Promise<string> {
+  return await invoke<string>("send_file_streaming", {
+    fileInfo,
+    targetAddress,
+    targetPort,
   });
 }
