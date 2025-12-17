@@ -1,11 +1,18 @@
 // 文件 API 适配器 - 将桌面端的 API 调用适配为 common 的 FileApi 接口
-
 import type { FileApi } from "stationuli-common/api";
 import * as fileApi from "./file";
 
 export const fileApiAdapter: FileApi = {
   async selectFile(): Promise<string | null> {
-    return await fileApi.selectFile();
+    const result = await fileApi.selectFile(false);
+    if (result === null) {
+      return null;
+    }
+    // 如果返回数组（不应该发生，因为 multiple=false），取第一个
+    if (Array.isArray(result)) {
+      return result[0] || null;
+    }
+    return result;
   },
   async getFileName(filePath: string): Promise<string> {
     return await fileApi.getFileName(filePath);

@@ -25,8 +25,6 @@ export function ReceivedFilesCard({
   const margin = isMobile ? "mb-5" : "mb-6";
   const shadow = isMobile ? "shadow-lg" : "shadow-xl";
   const titleSize = isMobile ? "text-xl" : "text-2xl";
-  const emptyPadding = isMobile ? "py-8" : "py-12";
-  const emptyTextSize = isMobile ? "text-base" : "text-lg";
   const badgeMargin = isMobile ? "ml-1" : "ml-2";
   const badgePadding = isMobile ? "px-2.5 py-0.5" : "px-3 py-1";
   const badgeTextSize = isMobile ? "text-xs" : "text-sm";

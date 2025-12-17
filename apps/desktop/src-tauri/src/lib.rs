@@ -14,9 +14,6 @@ use api::device::{
   stop_discovery, test_connection, update_device,
 };
 use api::file::{get_file_size, save_received_file, send_file};
-use api::projection::{
-  start_projection, start_receiving_projection, stop_projection, stop_receiving_projection,
-};
 use logging::init_logging_to_ui;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -51,11 +48,6 @@ pub fn run() {
       send_file,
       get_file_size,
       save_received_file,
-      // 投影相关 API（对应前端 src/api/projection.ts）
-      start_projection,
-      stop_projection,
-      start_receiving_projection,
-      stop_receiving_projection,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
