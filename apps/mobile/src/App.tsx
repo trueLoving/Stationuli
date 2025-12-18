@@ -1,16 +1,15 @@
 // 主应用组件
-
 import { listen } from "@tauri-apps/api/event";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DevTools, WelcomeEmptyState } from "stationuli-common/components";
 import * as deviceApi from "./api/device";
+import { selectFile } from "./api/file";
 import "./App.css";
 import { AddDeviceDialog } from "./components/AddDeviceDialog";
 import { DeviceCard } from "./components/DeviceCard";
 import { ReceivedFilesCard } from "./components/ReceivedFilesCard";
 import { ServiceStatusCard } from "./components/ServiceStatusCard";
-import { ProjectionControl } from "./components/ProjectionControl";
 import { useDiscovery } from "./hooks/useDiscovery";
 import { useFileTransfer } from "./hooks/useFileTransfer";
 import type { DeviceInfo } from "./types";
@@ -115,7 +114,6 @@ function App() {
   // 发送文件（支持多选）
   const handleSendFile = async (device: DeviceInfo) => {
     try {
-      const { selectFile } = await import("./api/file");
       const selected = await selectFile(true);
 
       if (!selected) {
@@ -289,20 +287,16 @@ function App() {
                 </h2>
                 <div className="space-y-3">
                   {discovery.devices.map((device: DeviceInfo) => (
-                    <div key={device.id} className="space-y-2">
-                      <DeviceCard
-                        device={device}
-                        variant="mobile"
-                        onTestConnection={handleTestConnection}
-                        onSendFile={handleSendFile}
-                        onOpenWorkspace={handleOpenWorkspace}
-                        onEdit={handleEditDevice}
-                        onDelete={handleDeleteDevice}
-                      />
-                      <div className="ml-2">
-                        <ProjectionControl device={device} />
-                      </div>
-                    </div>
+                    <DeviceCard
+                      key={device.id}
+                      device={device}
+                      variant="mobile"
+                      onTestConnection={handleTestConnection}
+                      onSendFile={handleSendFile}
+                      onOpenWorkspace={handleOpenWorkspace}
+                      onEdit={handleEditDevice}
+                      onDelete={handleDeleteDevice}
+                    />
                   ))}
                 </div>
               </div>

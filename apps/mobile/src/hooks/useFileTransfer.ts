@@ -1,15 +1,17 @@
 // 文件传输相关 Hook - 使用 stationuli-common 的 useFileTransfer
-
-import { useCallback, useState, useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { useCallback, useEffect, useState } from "react";
 import { useFileTransfer as useFileTransferCommon } from "stationuli-common/hooks/useFileTransfer";
+import type { FileInfo } from "../api/file";
+import { PermissionStatus } from "../api/file";
 import {
   fileApiAdapter,
   selectFileAndroid,
   selectFileAndroidV2,
   sendFileStreaming,
 } from "../api/fileAdapter";
-import type { FileInfo, PermissionStatus } from "../api/file";
+import { FILE_FILTERS } from "../constants";
+import { sendFile } from "../api/file";
 
 export function useFileTransfer() {
   const [selectedFileInfo, setSelectedFileInfo] = useState<FileInfo | null>(
@@ -79,7 +81,6 @@ export function useFileTransfer() {
           error
         );
         const { open } = await import("@tauri-apps/plugin-dialog");
-        const { FILE_FILTERS } = await import("../constants");
         const genericSelected = (await open({
           multiple: false,
           directory: false,
@@ -103,7 +104,6 @@ export function useFileTransfer() {
       // 如果传入了文件路径，直接使用旧的 send_file API
       // 这样可以避免需要 FileInfo 的问题
       if (filePath) {
-        const { sendFile } = await import("../api/file");
         try {
           setTransferProgress(0);
           await sendFile(filePath, targetAddress, targetPort);
@@ -131,7 +131,7 @@ export function useFileTransfer() {
         if (!confirmed) {
           return;
         }
-        // 重新选择文件
+        // 重新选择文件 - 使用增强的文件选择器以获取 FileInfo
         const newFile = await selectFileEnhanced();
         if (!newFile) {
           return;
@@ -159,7 +159,6 @@ export function useFileTransfer() {
   // 使用通用的 useFileTransfer Hook，但覆盖关键函数
   const commonHook = useFileTransferCommon({
     fileApi: fileApiAdapter,
-    onSelectFile: selectFileEnhanced,
   });
 
   return {

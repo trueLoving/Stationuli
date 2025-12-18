@@ -14,3 +14,5 @@ export interface ReceivedFile {
   name: string;
   path: string;
 }
+
+export * from "./transfer";

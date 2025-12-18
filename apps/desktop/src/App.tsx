@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DevTools, WelcomeEmptyState } from "stationuli-common/components";
 import * as deviceApi from "./api/device";
+import { selectFile } from "./api/file";
 import "./App.css";
 import { AddDeviceDialog } from "./components/AddDeviceDialog";
 import { DeviceCard } from "./components/DeviceCard";
@@ -54,13 +55,13 @@ function App() {
     }
     const address = deviceAddress.trim();
     if (!address) {
-      alert("请输入设备 IP 地址");
+      alert("请输入设备 IP 地址和端口\n格式：192.168.1.100:8080");
       return;
     }
 
     const port = parseInt(devicePort, 10);
     if (isNaN(port) || port <= 0 || port > 65535) {
-      alert("端口号无效，请输入 1-65535 之间的数字");
+      alert("端口号无效，请输入 1-65535 之间的数字\n格式：192.168.1.100:8080");
       return;
     }
 
@@ -125,7 +126,6 @@ function App() {
   // 发送文件（支持多选）
   const handleSendFile = async (device: DeviceInfo) => {
     try {
-      const { selectFile } = await import("./api/file");
       const selected = await selectFile(true);
 
       if (!selected) {
@@ -218,13 +218,13 @@ function App() {
   const handleUpdateDevice = async () => {
     const address = deviceAddress.trim();
     if (!address) {
-      alert("请输入设备 IP 地址");
+      alert("请输入设备 IP 地址和端口\n格式：192.168.1.100:8080");
       return;
     }
 
     const port = parseInt(devicePort, 10);
     if (isNaN(port) || port <= 0 || port > 65535) {
-      alert("端口号无效，请输入 1-65535 之间的数字");
+      alert("端口号无效，请输入 1-65535 之间的数字\n格式：192.168.1.100:8080");
       return;
     }
 
