@@ -139,10 +139,20 @@ export function useLogs() {
 
     const setupBackendLogListener = async () => {
       try {
-        const { listen } = await import("@tauri-apps/api/event");
+        // 动态导入 Tauri API（仅在 Tauri 环境中可用）
+        // 使用字符串形式避免构建时解析
+        const tauriEventModule = "@tauri-apps/api/event";
+        const tauriEvent = await Function("return import")()(
+          tauriEventModule
+        ).catch(() => null);
+        if (!tauriEvent) {
+          console.warn("[useLogs] Tauri event API not available");
+          return;
+        }
 
-        const unlisten = await listen<string>("log-message", (event) => {
-          const message = event.payload;
+        const { listen } = tauriEvent;
+        const unlisten = await listen("log-message", (event: any) => {
+          const message = event.payload as string;
 
           // 解析日志级别（从消息中提取）
           let level: LogEntry["level"] = "info";

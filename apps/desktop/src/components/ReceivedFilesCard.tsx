@@ -9,18 +9,5 @@ interface ReceivedFilesCardProps {
 }
 
 export function ReceivedFilesCard(props: ReceivedFilesCardProps) {
-  // 暂时移除打开位置功能
-  // const handleOpenLocation = async (file: ReceivedFile) => {
-  //   const { openUrl } = await import("@tauri-apps/plugin-opener");
-  //   const parentDir = file.path.split("/").slice(0, -1).join("/");
-  //   await openUrl(parentDir);
-  // };
-
-  return (
-    <ReceivedFilesCardCommon
-      {...props}
-      // onOpenLocation={handleOpenLocation}
-      variant="desktop"
-    />
-  );
+  return <ReceivedFilesCardCommon {...props} variant="desktop" />;
 }

@@ -16,7 +16,12 @@ export interface DeviceApi {
 }
 
 export interface FileApi {
-  selectFile(): Promise<string | null>;
+  /**
+   * 选择文件
+   * 桌面端返回文件路径字符串，移动端可以返回包含 uri 和 name 的对象
+   * @returns 文件路径字符串，或包含 uri 和 name 的对象，或 null（用户取消）
+   */
+  selectFile(): Promise<string | { uri: string; name: string } | null>;
   getFileName(filePath: string): Promise<string>;
   getFileSize(filePath: string): Promise<number>;
   sendFile(
@@ -25,9 +30,4 @@ export interface FileApi {
     targetPort: number
   ): Promise<string>;
   saveReceivedFile(filePath: string, fileName: string): Promise<string>;
-}
-
-// 用于移动端的特殊文件选择器接口
-export interface MobileFileApi extends FileApi {
-  selectFileAndroid?(): Promise<{ uri: string; name: string } | null>;
 }

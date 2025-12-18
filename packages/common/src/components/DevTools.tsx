@@ -78,67 +78,67 @@ export function DevTools({
     });
   };
 
-  // 导出日志
-  const exportLogs = () => {
-    try {
-      if (filteredLogs.length === 0) {
-        console.warn("[DevTools] 没有可导出的日志");
-        alert("没有可导出的日志");
-        return;
-      }
-
-      console.log(`[DevTools] 开始导出 ${filteredLogs.length} 条日志`);
-
-      const logText = filteredLogs
-        .map((log) => {
-          const time = formatTime(log.timestamp);
-          const level = getLogLevelLabel(log.level);
-          const source = log.source === "frontend" ? "前端" : "后端";
-          return `[${time}] ${level} [${source}] ${log.message}`;
-        })
-        .join("\n");
-
-      console.log(`[DevTools] 日志文本长度: ${logText.length} 字符`);
-
-      // 使用 Blob 和下载链接
-      const blob = new Blob([logText], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      const timestamp = new Date()
-        .toISOString()
-        .replace(/[:.]/g, "-")
-        .slice(0, -5);
-      a.download = `stationuli-logs-${timestamp}.txt`;
-      a.style.display = "none";
-      a.style.visibility = "hidden";
-
-      console.log(`[DevTools] 准备下载文件: ${a.download}`);
-
-      // 确保元素在 DOM 中
-      document.body.appendChild(a);
-
-      // 触发点击
-      console.log("[DevTools] 触发下载...");
-      a.click();
-
-      // 延迟清理，确保下载已开始
-      setTimeout(() => {
-        if (a.parentNode) {
-          document.body.removeChild(a);
-        }
-        URL.revokeObjectURL(url);
-        console.log("[DevTools] 导出完成，已清理资源");
-      }, 200);
-    } catch (error) {
-      console.error("[DevTools] 导出日志失败:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      console.error("[DevTools] 错误详情:", error);
-      alert(`导出日志失败: ${errorMessage}`);
-    }
-  };
+  // 导出日志功能（暂时未使用，按钮已注释）
+  // const exportLogs = () => {
+  //   try {
+  //     if (filteredLogs.length === 0) {
+  //       console.warn("[DevTools] 没有可导出的日志");
+  //       alert("没有可导出的日志");
+  //       return;
+  //     }
+  //
+  //     console.log(`[DevTools] 开始导出 ${filteredLogs.length} 条日志`);
+  //
+  //     const logText = filteredLogs
+  //       .map((log) => {
+  //         const time = formatTime(log.timestamp);
+  //         const level = getLogLevelLabel(log.level);
+  //         const source = log.source === "frontend" ? "前端" : "后端";
+  //         return `[${time}] ${level} [${source}] ${log.message}`;
+  //       })
+  //       .join("\n");
+  //
+  //     console.log(`[DevTools] 日志文本长度: ${logText.length} 字符`);
+  //
+  //     // 使用 Blob 和下载链接
+  //     const blob = new Blob([logText], { type: "text/plain;charset=utf-8" });
+  //     const url = URL.createObjectURL(blob);
+  //
+  //     const a = document.createElement("a");
+  //     a.href = url;
+  //     const timestamp = new Date()
+  //       .toISOString()
+  //       .replace(/[:.]/g, "-")
+  //       .slice(0, -5);
+  //     a.download = `stationuli-logs-${timestamp}.txt`;
+  //     a.style.display = "none";
+  //     a.style.visibility = "hidden";
+  //
+  //     console.log(`[DevTools] 准备下载文件: ${a.download}`);
+  //
+  //     // 确保元素在 DOM 中
+  //     document.body.appendChild(a);
+  //
+  //     // 触发点击
+  //     console.log("[DevTools] 触发下载...");
+  //     a.click();
+  //
+  //     // 延迟清理，确保下载已开始
+  //     setTimeout(() => {
+  //       if (a.parentNode) {
+  //         document.body.removeChild(a);
+  //       }
+  //       URL.revokeObjectURL(url);
+  //       console.log("[DevTools] 导出完成，已清理资源");
+  //     }, 200);
+  //   } catch (error) {
+  //     console.error("[DevTools] 导出日志失败:", error);
+  //     const errorMessage =
+  //       error instanceof Error ? error.message : String(error);
+  //     console.error("[DevTools] 错误详情:", error);
+  //     alert(`导出日志失败: ${errorMessage}`);
+  //   }
+  // };
 
   // 过滤日志
   const filteredLogs = logs.filter((log) => {

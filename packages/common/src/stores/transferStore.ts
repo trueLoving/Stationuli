@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { TransferInfo, TransferStatus } from "../types";
+import type { TransferInfo } from "../types";
 
 interface TransferState {
   transfers: TransferInfo[];
@@ -13,7 +13,7 @@ interface TransferState {
 /**
  * 传输状态管理 Store
  */
-export const useTransferStore = create<TransferState>((set) => ({
+export const useTransferStore = create<TransferState>((set, get) => ({
   transfers: [],
 
   addTransfer: (transfer) =>
@@ -33,8 +33,8 @@ export const useTransferStore = create<TransferState>((set) => ({
       transfers: state.transfers.filter((t) => t.id !== transferId),
     })),
 
-  getTransfer: (transferId) => {
-    const state = useTransferStore.getState();
+  getTransfer: (transferId: string): TransferInfo | undefined => {
+    const state = get();
     return state.transfers.find((t) => t.id === transferId);
   },
 

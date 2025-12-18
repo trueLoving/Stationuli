@@ -1,5 +1,4 @@
 // 设备 API 适配器 - 将移动端的 API 调用适配为 common 的 DeviceApi 接口
-
 import type { DeviceApi } from "stationuli-common/api";
 import type { DeviceInfo } from "stationuli-common/types";
 import * as deviceApi from "./device";

@@ -17,7 +17,7 @@ interface WelcomeEmptyStateProps {
 
 export function WelcomeEmptyState({
   onStartService,
-  onStopService,
+  onStopService: _onStopService,
   isDiscovering = false,
   deviceId = "",
   localIp = "",
@@ -38,9 +38,10 @@ export function WelcomeEmptyState({
     ? "w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 text-base"
     : "px-8 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg hover:from-blue-600 hover:to-indigo-700 transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-base";
 
-  const stopButtonClass = isMobile
-    ? "w-full px-6 py-4 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 text-base"
-    : "px-8 py-4 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg hover:from-red-600 hover:to-pink-700 transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-base";
+  // 停止按钮样式（暂时未使用）
+  // const stopButtonClass = isMobile
+  //   ? "w-full px-6 py-4 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 text-base"
+  //   : "px-8 py-4 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg hover:from-red-600 hover:to-pink-700 transform hover:scale-105 transition-all duration-200 flex items-center gap-2 text-base";
 
   return (
     <div className="text-center">

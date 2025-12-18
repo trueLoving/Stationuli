@@ -6,15 +6,9 @@ import type { ReceivedFile } from "../types";
 
 interface UseFileTransferOptions {
   fileApi: FileApi;
-  onSelectFile?: (
-    filePath: string
-  ) => Promise<{ uri: string; name: string } | null>;
 }
 
-export function useFileTransfer({
-  fileApi,
-  onSelectFile,
-}: UseFileTransferOptions) {
+export function useFileTransfer({ fileApi }: UseFileTransferOptions) {
   const [selectedFile, setSelectedFile] = useState<string>("");
   const [selectedFileName, setSelectedFileName] = useState<string>("");
   const [selectedFileSize, setSelectedFileSize] = useState<number>(0);
@@ -23,76 +17,64 @@ export function useFileTransfer({
 
   const selectFile = useCallback(async () => {
     try {
-      let selectedUri: string | null = null;
+      const result = await fileApi.selectFile();
+
+      if (!result) {
+        return; // 用户取消选择
+      }
+
+      let selectedUri: string;
       let selectedName: string | null = null;
 
-      // 如果提供了自定义文件选择器（如 Android），先尝试使用
-      if (onSelectFile) {
+      // 处理返回结果：可能是字符串路径或包含 uri 和 name 的对象
+      if (typeof result === "string") {
+        selectedUri = result;
+      } else {
+        selectedUri = result.uri;
+        selectedName = result.name;
+      }
+
+      // 解码 URI
+      let decodedPath = selectedUri;
+      try {
+        decodedPath = decodeURIComponent(selectedUri);
+      } catch (e) {
+        console.warn("Failed to decode URI, using original:", e);
+      }
+
+      setSelectedFile(decodedPath);
+
+      // 如果已经提供了文件名，直接使用
+      if (selectedName) {
+        setSelectedFileName(selectedName);
+      } else {
+        // 否则通过 API 获取文件名
         try {
-          const result = await onSelectFile("");
-          if (result) {
-            selectedUri = result.uri;
-            selectedName = result.name;
-          }
+          const fileName = await fileApi.getFileName(decodedPath);
+          setSelectedFileName(fileName);
         } catch (error) {
-          console.log(
-            "Custom file picker not available, using generic dialog:",
-            error
-          );
+          console.warn("Failed to get file name:", error);
+          const fallbackName =
+            decodedPath.split("/").pop() ||
+            decodedPath.split("\\").pop() ||
+            "未知文件";
+          setSelectedFileName(fallbackName);
         }
       }
 
-      // 如果没有选择文件，使用通用文件选择器
-      if (!selectedUri) {
-        const filePath = await fileApi.selectFile();
-        if (filePath) {
-          selectedUri = filePath;
-        }
-      }
-
-      if (selectedUri && typeof selectedUri === "string") {
-        // 解码 URI
-        let decodedPath = selectedUri;
-        try {
-          decodedPath = decodeURIComponent(selectedUri);
-        } catch (e) {
-          console.warn("Failed to decode URI, using original:", e);
-        }
-
-        setSelectedFile(decodedPath);
-
-        // 如果已经提供了文件名，直接使用
-        if (selectedName) {
-          setSelectedFileName(selectedName);
-        } else {
-          // 否则通过 API 获取文件名
-          try {
-            const fileName = await fileApi.getFileName(decodedPath);
-            setSelectedFileName(fileName);
-          } catch (error) {
-            console.warn("Failed to get file name:", error);
-            const fallbackName =
-              decodedPath.split("/").pop() ||
-              decodedPath.split("\\").pop() ||
-              "未知文件";
-            setSelectedFileName(fallbackName);
-          }
-        }
-
-        // 获取文件大小
-        try {
-          const fileSize = await fileApi.getFileSize(decodedPath);
-          setSelectedFileSize(fileSize);
-        } catch (error) {
-          console.warn("Failed to get file size:", error);
-          setSelectedFileSize(0);
-        }
+      // 获取文件大小
+      try {
+        const fileSize = await fileApi.getFileSize(decodedPath);
+        setSelectedFileSize(fileSize);
+      } catch (error) {
+        console.warn("Failed to get file size:", error);
+        setSelectedFileSize(0);
       }
     } catch (error) {
       console.error("Failed to select file:", error);
       alert(`选择文件失败: ${error}`);
     }
-  }, [fileApi, onSelectFile]);
+  }, [fileApi]);
 
   const clearSelectedFile = useCallback(() => {
     setSelectedFile("");

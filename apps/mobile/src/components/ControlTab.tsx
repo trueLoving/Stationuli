@@ -99,6 +99,7 @@ export function ControlTab({
           <div className="space-y-3">
             {devices.map((device) => (
               <DeviceCard
+                variant="mobile"
                 key={device.id}
                 device={device}
                 onTestConnection={onTestConnection}

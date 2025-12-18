@@ -1,5 +1,4 @@
 // 文件传输标签页组件
-
 import { Plus, Smartphone } from "lucide-react";
 import type { DeviceInfo, ReceivedFile } from "../types";
 import { DeviceCard } from "./DeviceCard";
@@ -26,6 +25,7 @@ interface TransferTabProps {
   onTestConnection: (device: DeviceInfo) => void;
   onSendFile: (device: DeviceInfo) => void;
   onSaveReceivedFile: (file: ReceivedFile) => void;
+  onDeleteReceivedFile: (file: ReceivedFile) => void;
 }
 
 export function TransferTab({
@@ -47,6 +47,7 @@ export function TransferTab({
   onTestConnection,
   onSendFile,
   onSaveReceivedFile,
+  onDeleteReceivedFile,
 }: TransferTabProps) {
   return (
     <div>
@@ -87,6 +88,7 @@ export function TransferTab({
                 <DeviceCard
                   key={device.id}
                   device={device}
+                  variant="mobile"
                   onTestConnection={onTestConnection}
                   onSendFile={onSendFile}
                 />
@@ -106,8 +108,10 @@ export function TransferTab({
       />
 
       <ReceivedFilesCard
+        variant="mobile"
         receivedFiles={receivedFiles}
         onSave={onSaveReceivedFile}
+        onDelete={onDeleteReceivedFile}
       />
     </div>
   );

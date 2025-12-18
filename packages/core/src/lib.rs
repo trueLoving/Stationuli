@@ -5,7 +5,7 @@
 pub mod crypto;
 pub mod file;
 pub mod p2p;
-pub mod projection;
+pub mod projection; // 设备投影模块，应用层暂时不使用，等稳定后再使用
 
 /// 核心错误类型
 #[derive(Debug, thiserror::Error)]
