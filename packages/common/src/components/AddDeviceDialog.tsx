@@ -180,21 +180,6 @@ export function AddDeviceDialog({
             </div>
           </div>
 
-          <div>
-            <label
-              className={`block ${isMobile ? "text-sm" : "text-sm"} font-medium text-gray-700 ${isMobile ? "mb-2" : "mb-2.5"}`}
-            >
-              设备ID <span className="text-gray-400 font-normal">(可选)</span>
-            </label>
-            <input
-              type="text"
-              value={deviceId}
-              onChange={(e) => onIdChange(e.target.value)}
-              placeholder="例如: device-xxx"
-              className={`w-full ${isMobile ? "px-4 py-3" : "px-4 py-3"} border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono ${isMobile ? "text-sm" : "text-sm"} hover:border-gray-400`}
-            />
-          </div>
-
           {/* 统一使用合并的 IP:端口 输入框（桌面端和移动端） */}
           <div>
             <label

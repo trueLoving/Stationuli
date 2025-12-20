@@ -5,6 +5,7 @@ export { DeviceCard } from "./DeviceCard";
 export { DevTools } from "./DevTools";
 export { EmptyState } from "./EmptyState";
 export { FileCard } from "./FileCard";
+export { FileDetailsDialog } from "./FileDetailsDialog";
 export { FileSelectionCard } from "./FileSelectionCard";
 export { ReceivedFilesCard } from "./ReceivedFilesCard";
 export { ServiceStatusCard } from "./ServiceStatusCard";

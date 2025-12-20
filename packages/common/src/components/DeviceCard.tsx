@@ -5,11 +5,13 @@ import {
   Globe,
   Laptop,
   Link2,
+  MoreVertical,
   Smartphone,
   Trash2,
   Upload,
   Workflow,
 } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import type { DeviceInfo } from "../types";
 
 interface DeviceCardProps {
@@ -34,6 +36,25 @@ export function DeviceCard({
   variant = "mobile",
 }: DeviceCardProps) {
   const isMobile = variant === "mobile";
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // 点击外部关闭菜单
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMoreMenu(false);
+      }
+    };
+
+    if (showMoreMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showMoreMenu]);
 
   return (
     <div
@@ -97,8 +118,11 @@ export function DeviceCard({
       {showActions && (
         <div
           className={
-            isMobile ? "flex gap-2 w-full flex-wrap" : "ml-4 flex gap-2"
+            isMobile
+              ? "flex gap-2 w-full flex-wrap"
+              : "ml-4 flex gap-2 relative"
           }
+          ref={menuRef}
         >
           <button
             onClick={() => onTestConnection(device)}
@@ -131,56 +155,73 @@ export function DeviceCard({
             />
             {isMobile ? "文件" : "文件传输"}
           </button>
-          {onOpenWorkspace && (
-            <button
-              onClick={() => onOpenWorkspace(device)}
-              className={`${
-                isMobile
-                  ? "flex-1 min-w-[80px] px-3 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-1 text-xs"
-                  : "px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
-              }`}
-              aria-label="工作台"
+          {(onOpenWorkspace || onEdit || onDelete) && (
+            <div
+              className={`relative ${isMobile ? "flex-1 min-w-[80px]" : ""}`}
             >
-              <Workflow
-                className={isMobile ? "w-3 h-3" : "w-4 h-4"}
-                aria-hidden="true"
-              />
-              {isMobile ? "工作台" : "工作台"}
-            </button>
-          )}
-          {onEdit && (
-            <button
-              onClick={() => onEdit(device)}
-              className={`${
-                isMobile
-                  ? "px-3 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-1 text-xs"
-                  : "px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
-              }`}
-              aria-label="编辑设备"
-            >
-              <Edit
-                className={isMobile ? "w-3 h-3" : "w-4 h-4"}
-                aria-hidden="true"
-              />
-              {isMobile ? "编辑" : "编辑"}
-            </button>
-          )}
-          {onDelete && (
-            <button
-              onClick={() => onDelete(device)}
-              className={`${
-                isMobile
-                  ? "px-3 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-1 text-xs"
-                  : "px-4 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
-              }`}
-              aria-label="删除设备"
-            >
-              <Trash2
-                className={isMobile ? "w-3 h-3" : "w-4 h-4"}
-                aria-hidden="true"
-              />
-              {isMobile ? "删除" : "删除"}
-            </button>
+              <button
+                onClick={() => setShowMoreMenu(!showMoreMenu)}
+                className={`${
+                  isMobile
+                    ? "w-full px-3 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center"
+                    : "px-4 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center"
+                }`}
+                aria-label="更多操作"
+                title="更多操作"
+              >
+                <MoreVertical
+                  className={isMobile ? "w-4 h-4" : "w-5 h-5"}
+                  aria-hidden="true"
+                />
+              </button>
+              {showMoreMenu && (
+                <div
+                  className={`absolute ${
+                    isMobile ? "right-0 top-full mt-1" : "right-0 top-full mt-2"
+                  } z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[120px]`}
+                >
+                  {onOpenWorkspace && (
+                    <button
+                      onClick={() => {
+                        onOpenWorkspace(device);
+                        setShowMoreMenu(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                      aria-label="工作台"
+                    >
+                      <Workflow className="w-4 h-4" aria-hidden="true" />
+                      工作台
+                    </button>
+                  )}
+                  {onEdit && (
+                    <button
+                      onClick={() => {
+                        onEdit(device);
+                        setShowMoreMenu(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                      aria-label="编辑设备"
+                    >
+                      <Edit className="w-4 h-4" aria-hidden="true" />
+                      编辑
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      onClick={() => {
+                        onDelete(device);
+                        setShowMoreMenu(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                      aria-label="删除设备"
+                    >
+                      <Trash2 className="w-4 h-4" aria-hidden="true" />
+                      删除
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}

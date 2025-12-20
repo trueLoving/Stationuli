@@ -9,7 +9,7 @@ interface ReceivedFilesCardProps {
   receivedFiles: ReceivedFile[];
   onSave: (file: ReceivedFile) => void;
   onDelete?: (file: ReceivedFile) => void;
-  onOpenLocation?: (file: ReceivedFile) => void;
+  onShowDetails?: (file: ReceivedFile) => void;
   variant?: "mobile" | "desktop";
 }
 
@@ -17,7 +17,7 @@ export function ReceivedFilesCard({
   receivedFiles,
   onSave,
   onDelete,
-  onOpenLocation,
+  onShowDetails,
   variant = "mobile",
 }: ReceivedFilesCardProps) {
   const isMobile = variant === "mobile";
@@ -57,14 +57,14 @@ export function ReceivedFilesCard({
           variant={variant}
         />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {receivedFiles.map((file, index) => (
             <FileCard
               key={index}
               file={file}
               onSave={onSave}
               onDelete={onDelete}
-              onOpenLocation={onOpenLocation}
+              onShowDetails={onShowDetails}
               variant={variant}
             />
           ))}
