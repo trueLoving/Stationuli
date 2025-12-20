@@ -4,15 +4,18 @@ import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DevTools, WelcomeEmptyState } from "stationuli-common/components";
 import * as deviceApi from "./api/device";
+import { fileApiAdapter } from "./api/fileAdapter";
 import { selectFile } from "./api/file";
 import "./App.css";
 import { AddDeviceDialog } from "./components/AddDeviceDialog";
 import { DeviceCard } from "./components/DeviceCard";
+import { FileDetailsDialog } from "./components/FileDetailsDialog";
 import { ReceivedFilesCard } from "./components/ReceivedFilesCard";
 import { ServiceStatusCard } from "./components/ServiceStatusCard";
 import { useDiscovery } from "./hooks/useDiscovery";
 import { useFileTransfer } from "./hooks/useFileTransfer";
 import type { DeviceInfo } from "./types";
+import type { ReceivedFile } from "stationuli-common/types";
 
 function App() {
   const [showAddDeviceDialog, setShowAddDeviceDialog] = useState(false);
@@ -21,6 +24,8 @@ function App() {
   const [deviceName, setDeviceName] = useState<string>("");
   const [deviceType, setDeviceType] = useState<string>("unknown");
   const [deviceId, setDeviceId] = useState<string>("");
+  const [showFileDetailsDialog, setShowFileDetailsDialog] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<ReceivedFile | null>(null);
 
   // 使用自定义 Hooks
   const discovery = useDiscovery();
@@ -221,11 +226,23 @@ function App() {
       }, 2000);
     });
 
-    const receivedUnlisten = listen("file-received", (event) => {
+    const receivedUnlisten = listen("file-received", async (event) => {
       const data = event.payload as { file_name: string; file_path: string };
+
+      // 获取文件大小
+      let fileSize: number | undefined;
+      try {
+        fileSize = await fileApiAdapter.getFileSize(data.file_path);
+      } catch (error) {
+        console.warn("Failed to get file size:", error);
+      }
+
       fileTransfer.addReceivedFile({
         name: data.file_name,
         path: data.file_path,
+        size: fileSize,
+        receivedAt: Date.now(),
+        sender: undefined, // 未来可以从事件中获取发送方信息
       });
       alert(`文件 "${data.file_name}" 接收成功！`);
     });
@@ -271,20 +288,29 @@ function App() {
               localIp={discovery.localIp}
               onStart={discovery.startDiscovery}
               onStop={discovery.stopDiscovery}
-              onAddDevice={openAddDeviceDialog}
               isLoading={discovery.isLoading}
             />
 
             {/* 中间：设备列表区域（有设备时显示） */}
             {hasDevices && (
               <div className="bg-white rounded-2xl shadow-lg p-5 mb-4 border border-gray-100">
-                <h2 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
-                  <span className="text-xl">📱</span>
-                  设备列表
-                  <span className="ml-1 px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                    {discovery.devices.length}
-                  </span>
-                </h2>
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <span className="text-xl">📱</span>
+                    设备列表
+                    <span className="ml-1 px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                      {discovery.devices.length}
+                    </span>
+                  </h2>
+                  <button
+                    onClick={openAddDeviceDialog}
+                    className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg text-sm font-medium shadow-sm active:scale-95 transition-all duration-200 flex items-center justify-center"
+                    aria-label="添加设备"
+                    title="添加设备"
+                  >
+                    <Plus className="w-5 h-5" aria-hidden="true" />
+                  </button>
+                </div>
                 <div className="space-y-3">
                   {discovery.devices.map((device: DeviceInfo) => (
                     <DeviceCard
@@ -305,13 +331,23 @@ function App() {
             {/* 无设备但服务已启动时，显示提示信息 */}
             {!hasDevices && discovery.isDiscovering && (
               <div className="bg-white rounded-2xl shadow-lg p-5 mb-4 border border-gray-100">
-                <h2 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
-                  <span className="text-xl">📱</span>
-                  设备列表
-                  <span className="ml-1 px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                    0
-                  </span>
-                </h2>
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <span className="text-xl">📱</span>
+                    设备列表
+                    <span className="ml-1 px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                      0
+                    </span>
+                  </h2>
+                  <button
+                    onClick={openAddDeviceDialog}
+                    className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg text-sm font-medium shadow-sm active:scale-95 transition-all duration-200 flex items-center justify-center"
+                    aria-label="添加设备"
+                    title="添加设备"
+                  >
+                    <Plus className="w-5 h-5" aria-hidden="true" />
+                  </button>
+                </div>
                 <div className="text-center py-6">
                   <p className="text-gray-500 text-sm mb-4">
                     服务已启动，等待设备连接或添加设备
@@ -333,6 +369,10 @@ function App() {
                 receivedFiles={fileTransfer.receivedFiles}
                 onSave={fileTransfer.saveReceivedFile}
                 onDelete={fileTransfer.removeReceivedFile}
+                onShowDetails={(file) => {
+                  setSelectedFile(file);
+                  setShowFileDetailsDialog(true);
+                }}
                 variant="mobile"
               />
             )}
@@ -355,6 +395,16 @@ function App() {
         onIdChange={setDeviceId}
         onClose={closeAddDeviceDialog}
         onAdd={handleAddDevice}
+      />
+
+      {/* 文件详情对话框 */}
+      <FileDetailsDialog
+        isOpen={showFileDetailsDialog}
+        file={selectedFile}
+        onClose={() => {
+          setShowFileDetailsDialog(false);
+          setSelectedFile(null);
+        }}
       />
 
       {/* 开发工具 */}

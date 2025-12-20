@@ -20,7 +20,7 @@ interface ServiceStatusCardProps {
   defaultPort: number;
   onStart: () => void;
   onStop: () => void;
-  onAddDevice: () => void;
+  onAddDevice?: () => void; // 改为可选
   isLoading?: boolean;
   children?: React.ReactNode;
   variant?: "mobile" | "desktop";
@@ -28,7 +28,7 @@ interface ServiceStatusCardProps {
 
 export function ServiceStatusCard({
   isDiscovering,
-  deviceId,
+  deviceId: _deviceId,
   localIp,
   defaultPort,
   onStart,
@@ -39,7 +39,6 @@ export function ServiceStatusCard({
   variant = "mobile",
 }: ServiceStatusCardProps) {
   const [copiedIp, setCopiedIp] = useState(false);
-  const [copiedId, setCopiedId] = useState(false);
   const isMobile = variant === "mobile";
   const padding = isMobile ? "p-5" : "p-6";
   const margin = isMobile ? "mb-5" : "mb-6";
@@ -65,7 +64,6 @@ export function ServiceStatusCard({
   const infoMargin = isMobile ? "mb-5" : "mb-6";
   const statusTextSize = isMobile ? "text-xs" : "text-sm";
   const ipTextSize = isMobile ? "text-xs" : "text-sm";
-  const idTextSize = isMobile ? "text-[10px]" : "text-xs";
   const hintTextSize = isMobile ? "text-[10px]" : "text-xs";
 
   return (
@@ -138,21 +136,23 @@ export function ServiceStatusCard({
             )}
           </button>
         )}
-        <button
-          onClick={onAddDevice}
-          disabled={isLoading}
-          className={`${addButtonClass} ${isLoading ? "opacity-60 cursor-not-allowed" : ""}`}
-          aria-label="添加设备"
-        >
-          <Plus
-            className={isMobile ? "w-5 h-5" : "w-4 h-4"}
-            aria-hidden="true"
-          />
-          <span>添加设备</span>
-        </button>
+        {onAddDevice && (
+          <button
+            onClick={onAddDevice}
+            disabled={isLoading}
+            className={`${addButtonClass} ${isLoading ? "opacity-60 cursor-not-allowed" : ""}`}
+            aria-label="添加设备"
+          >
+            <Plus
+              className={isMobile ? "w-5 h-5" : "w-4 h-4"}
+              aria-hidden="true"
+            />
+            <span>添加设备</span>
+          </button>
+        )}
       </div>
 
-      {isDiscovering && (deviceId || localIp) && (
+      {isDiscovering && localIp && (
         <div
           className={`${infoMargin} ${infoPadding} bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100`}
         >
@@ -215,40 +215,6 @@ export function ServiceStatusCard({
                   </div>
                 )}
               </>
-            )}
-            {deviceId && (
-              <div
-                className={`flex items-center gap-2 ${isMobile ? "mt-2" : ""}`}
-              >
-                <p
-                  className={`font-mono ${idTextSize} text-gray-600 break-all flex-1`}
-                >
-                  ID: {deviceId}
-                </p>
-                <button
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(deviceId);
-                      setCopiedId(true);
-                      setTimeout(() => setCopiedId(false), 1000);
-                    } catch (err) {
-                      console.error("复制失败:", err);
-                    }
-                  }}
-                  className="px-2 py-1 text-gray-500 hover:text-gray-700 active:text-green-600 transition-colors"
-                  title="复制设备ID"
-                  aria-label="复制设备ID"
-                >
-                  {copiedId ? (
-                    <Check
-                      className="w-4 h-4 text-green-600"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <Copy className="w-4 h-4" aria-hidden="true" />
-                  )}
-                </button>
-              </div>
             )}
           </div>
           {localIp !== "localhost" && isMobile && (
