@@ -2,15 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 确保移动端底部导航栏安全区域 */
+/* 顶部安全区域适配 - 适配状态栏 */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .pt-safe-top {
+    padding-top: calc(2.5rem + env(safe-area-inset-top));
+  }
+}
+
+@supports not (padding-top: env(safe-area-inset-top)) {
+  .pt-safe-top {
+    padding-top: 1.5rem;
+  }
+}
+
+/* 底部安全区域适配 - 适配底部导航栏和系统手势区域 */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
-  .safe-area-inset-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
+  .pb-safe-bottom {
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
   }
 
   /* 内容区域的底部 padding，为底部导航栏留出空间 */
-  .pb-safe {
-    padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+  .pb-safe-content {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+}
+
+@supports not (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe-bottom {
+    padding-bottom: 0.5rem;
+  }
+
+  .pb-safe-content {
+    padding-bottom: 4.5rem;
   }
 }
 
@@ -24,14 +47,22 @@
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .bottom-nav-safe {
     /* 有安全区域时，添加 padding 让背景色填充安全区域 */
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
   }
 }
 
 /* 横屏适配 */
 @media (orientation: landscape) {
-  .pb-safe {
-    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .pb-safe-content {
+      padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+    }
+  }
+
+  @supports not (padding-bottom: env(safe-area-inset-bottom)) {
+    .pb-safe-content {
+      padding-bottom: 4rem;
+    }
   }
 
   /* 横屏时使用更紧凑的布局 */
