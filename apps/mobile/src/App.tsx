@@ -1,21 +1,24 @@
 // 主应用组件
 import { listen } from "@tauri-apps/api/event";
-import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { DevTools, WelcomeEmptyState } from "stationuli-common/components";
+import { DevTools } from "stationuli-common/components";
+import type { ReceivedFile } from "stationuli-common/types";
 import * as deviceApi from "./api/device";
-import { fileApiAdapter } from "./api/fileAdapter";
 import { selectFile } from "./api/file";
+import { fileApiAdapter } from "./api/fileAdapter";
 import "./App.css";
 import { AddDeviceDialog } from "./components/AddDeviceDialog";
-import { DeviceCard } from "./components/DeviceCard";
 import { FileDetailsDialog } from "./components/FileDetailsDialog";
-import { ReceivedFilesCard } from "./components/ReceivedFilesCard";
-import { ServiceStatusCard } from "./components/ServiceStatusCard";
+import { Layout } from "./components/Layout";
+import { DEFAULT_PORT } from "./constants";
 import { useDiscovery } from "./hooks/useDiscovery";
 import { useFileTransfer } from "./hooks/useFileTransfer";
+import { DevicesPage } from "./pages/DevicesPage";
+import { HistoryPage } from "./pages/HistoryPage";
+import { HomePage } from "./pages/HomePage";
+import { SettingsPage } from "./pages/SettingsPage";
+import { useAppStore } from "./stores/appStore";
 import type { DeviceInfo } from "./types";
-import type { ReceivedFile } from "stationuli-common/types";
 
 function App() {
   const [showAddDeviceDialog, setShowAddDeviceDialog] = useState(false);
@@ -254,131 +257,58 @@ function App() {
     };
   }, [fileTransfer]);
 
-  // 判断是否显示完整界面（有设备或服务已启动时显示）
-  const hasDevices = discovery.devices.length > 0;
-  const showFullInterface = hasDevices || discovery.isDiscovering;
+  const currentPage = useAppStore((state) => state.currentPage);
+
+  // 渲染页面内容
+  const renderPageContent = () => {
+    switch (currentPage) {
+      case "home":
+        return (
+          <HomePage
+            isDiscovering={discovery.isDiscovering}
+            receivedFiles={fileTransfer.receivedFiles}
+            onSaveFile={fileTransfer.saveReceivedFile}
+            onDeleteFile={fileTransfer.removeReceivedFile}
+            onShowFileDetails={(file) => {
+              setSelectedFile(file);
+              setShowFileDetailsDialog(true);
+            }}
+          />
+        );
+      case "devices":
+        return (
+          <DevicesPage
+            devices={discovery.devices}
+            onAddDevice={openAddDeviceDialog}
+            onTestConnection={handleTestConnection}
+            onSendFile={handleSendFile}
+            onOpenWorkspace={handleOpenWorkspace}
+            onEditDevice={handleEditDevice}
+            onDeleteDevice={handleDeleteDevice}
+            isDiscovering={discovery.isDiscovering}
+          />
+        );
+      case "history":
+        return <HistoryPage />;
+      case "settings":
+        return <SettingsPage />;
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="w-full mx-auto font-sans min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 relative">
-      {/* 内容区域 - 添加响应式 padding 和 safe-area 支持 */}
-      <div className="px-4 py-6 overflow-y-auto pb-24 min-h-screen">
-        {!showFullInterface ? (
-          // 初始状态：无设备且服务未启动时只显示添加设备入口
-          <div className="flex items-center justify-center min-h-[80vh] py-8">
-            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 w-full">
-              <WelcomeEmptyState
-                onStartService={discovery.startDiscovery}
-                onStopService={discovery.stopDiscovery}
-                isDiscovering={discovery.isDiscovering}
-                deviceId={discovery.deviceId}
-                localIp={discovery.localIp}
-                defaultPort={8080}
-                isLoading={discovery.isLoading}
-                variant="mobile"
-              />
-            </div>
-          </div>
-        ) : (
-          // 有设备或服务已启动后显示完整界面
-          <>
-            {/* 顶部：服务状态卡片 */}
-            <ServiceStatusCard
-              isDiscovering={discovery.isDiscovering}
-              deviceId={discovery.deviceId}
-              localIp={discovery.localIp}
-              onStart={discovery.startDiscovery}
-              onStop={discovery.stopDiscovery}
-              isLoading={discovery.isLoading}
-            />
-
-            {/* 中间：设备列表区域（有设备时显示） */}
-            {hasDevices && (
-              <div className="bg-white rounded-2xl shadow-lg p-5 mb-4 border border-gray-100">
-                <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <span className="text-xl">📱</span>
-                    设备列表
-                    <span className="ml-1 px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                      {discovery.devices.length}
-                    </span>
-                  </h2>
-                  <button
-                    onClick={openAddDeviceDialog}
-                    className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg text-sm font-medium shadow-sm active:scale-95 transition-all duration-200 flex items-center justify-center"
-                    aria-label="添加设备"
-                    title="添加设备"
-                  >
-                    <Plus className="w-5 h-5" aria-hidden="true" />
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {discovery.devices.map((device: DeviceInfo) => (
-                    <DeviceCard
-                      key={device.id}
-                      device={device}
-                      variant="mobile"
-                      onTestConnection={handleTestConnection}
-                      onSendFile={handleSendFile}
-                      onOpenWorkspace={handleOpenWorkspace}
-                      onEdit={handleEditDevice}
-                      onDelete={handleDeleteDevice}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 无设备但服务已启动时，显示提示信息 */}
-            {!hasDevices && discovery.isDiscovering && (
-              <div className="bg-white rounded-2xl shadow-lg p-5 mb-4 border border-gray-100">
-                <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <span className="text-xl">📱</span>
-                    设备列表
-                    <span className="ml-1 px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                      0
-                    </span>
-                  </h2>
-                  <button
-                    onClick={openAddDeviceDialog}
-                    className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg text-sm font-medium shadow-sm active:scale-95 transition-all duration-200 flex items-center justify-center"
-                    aria-label="添加设备"
-                    title="添加设备"
-                  >
-                    <Plus className="w-5 h-5" aria-hidden="true" />
-                  </button>
-                </div>
-                <div className="text-center py-6">
-                  <p className="text-gray-500 text-sm mb-4">
-                    服务已启动，等待设备连接或添加设备
-                  </p>
-                  <button
-                    onClick={openAddDeviceDialog}
-                    className="w-full px-5 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold shadow-md active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 text-base"
-                  >
-                    <Plus className="w-5 h-5" aria-hidden="true" />
-                    添加设备
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* 底部：接收的文件区域（服务已启动时显示） */}
-            {discovery.isDiscovering && (
-              <ReceivedFilesCard
-                receivedFiles={fileTransfer.receivedFiles}
-                onSave={fileTransfer.saveReceivedFile}
-                onDelete={fileTransfer.removeReceivedFile}
-                onShowDetails={(file) => {
-                  setSelectedFile(file);
-                  setShowFileDetailsDialog(true);
-                }}
-                variant="mobile"
-              />
-            )}
-          </>
-        )}
-      </div>
+    <div className="w-full mx-auto font-sans min-h-screen bg-gray-50 relative">
+      <Layout
+        isDiscovering={discovery.isDiscovering}
+        localIp={discovery.localIp}
+        defaultPort={DEFAULT_PORT}
+        onStartDiscovery={discovery.startDiscovery}
+        onStopDiscovery={discovery.stopDiscovery}
+        isLoading={discovery.isLoading}
+      >
+        {renderPageContent()}
+      </Layout>
 
       {/* 添加设备对话框 */}
       <AddDeviceDialog

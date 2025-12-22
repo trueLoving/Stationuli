@@ -1,21 +1,25 @@
-// 主应用组件
+// 主应用组件（重构版 - 设备中心架构）
 import { listen } from "@tauri-apps/api/event";
-import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { DevTools, WelcomeEmptyState } from "stationuli-common/components";
+import { DevTools } from "stationuli-common/components";
+import type { ReceivedFile } from "stationuli-common/types";
 import * as deviceApi from "./api/device";
-import { fileApiAdapter } from "./api/fileAdapter";
 import { selectFile } from "./api/file";
+import { fileApiAdapter } from "./api/fileAdapter";
 import "./App.css";
 import { AddDeviceDialog } from "./components/AddDeviceDialog";
-import { DeviceCard } from "./components/DeviceCard";
 import { FileDetailsDialog } from "./components/FileDetailsDialog";
-import { ReceivedFilesCard } from "./components/ReceivedFilesCard";
-import { ServiceStatusCard } from "./components/ServiceStatusCard";
+import { Layout } from "./components/Layout";
+import { Workspace } from "./components/Workspace";
+import { DEFAULT_PORT } from "./constants";
 import { useDiscovery } from "./hooks/useDiscovery";
 import { useFileTransfer } from "./hooks/useFileTransfer";
+import { DevicesPage } from "./pages/DevicesPage";
+import { HistoryPage } from "./pages/HistoryPage";
+import { HomePage } from "./pages/HomePage";
+import { SettingsPage } from "./pages/SettingsPage";
+import { useAppStore } from "./stores/appStore";
 import type { DeviceInfo } from "./types";
-import type { ReceivedFile } from "stationuli-common/types";
 
 function App() {
   const [showAddDeviceDialog, setShowAddDeviceDialog] = useState(false);
@@ -203,11 +207,19 @@ function App() {
     };
   }, [fileTransfer]);
 
-  // 打开工作台（占位）
+  // 工作台状态
+  const [workspaceDevice, setWorkspaceDevice] = useState<DeviceInfo | null>(
+    null
+  );
+
+  // 打开工作台
   const handleOpenWorkspace = (device: DeviceInfo) => {
-    alert(
-      `工作台功能开发中...\n设备: ${device.name}\n地址: ${device.address}:${device.port}`
-    );
+    setWorkspaceDevice(device);
+  };
+
+  // 关闭工作台
+  const handleCloseWorkspace = () => {
+    setWorkspaceDevice(null);
   };
 
   // 编辑设备
@@ -262,129 +274,65 @@ function App() {
     }
   };
 
-  // 判断是否显示完整界面（有设备或服务已启动时显示）
-  const hasDevices = discovery.devices.length > 0;
-  const showFullInterface = hasDevices || discovery.isDiscovering;
+  const currentPage = useAppStore((state) => state.currentPage);
+
+  // 渲染页面内容
+  const renderPageContent = () => {
+    switch (currentPage) {
+      case "home":
+        return (
+          <HomePage
+            isDiscovering={discovery.isDiscovering}
+            receivedFiles={fileTransfer.receivedFiles}
+            onSaveFile={fileTransfer.saveReceivedFile}
+            onDeleteFile={fileTransfer.removeReceivedFile}
+            onShowFileDetails={(file) => {
+              setSelectedFile(file);
+              setShowFileDetailsDialog(true);
+            }}
+          />
+        );
+      case "devices":
+        return (
+          <DevicesPage
+            devices={discovery.devices}
+            onAddDevice={openAddDeviceDialog}
+            onTestConnection={handleTestConnection}
+            onSendFile={handleSendFile}
+            onOpenWorkspace={handleOpenWorkspace}
+            onEditDevice={handleEditDevice}
+            onDeleteDevice={handleDeleteDevice}
+            isDiscovering={discovery.isDiscovering}
+          />
+        );
+      case "history":
+        return <HistoryPage />;
+      case "settings":
+        return <SettingsPage />;
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 font-sans">
-      {/* 主内容区域 */}
-      <div className="max-w-5xl xl:max-w-7xl mx-auto px-6 py-8">
-        {!showFullInterface ? (
-          // 初始状态：无设备且服务未启动时只显示添加设备入口
-          <div className="flex items-center justify-center min-h-[70vh] py-12">
-            <div className="bg-white rounded-2xl shadow-xl p-10 border border-gray-100 w-full max-w-3xl">
-              <WelcomeEmptyState
-                onStartService={discovery.startDiscovery}
-                onStopService={discovery.stopDiscovery}
-                isDiscovering={discovery.isDiscovering}
-                deviceId={discovery.deviceId}
-                localIp={discovery.localIp}
-                defaultPort={8080}
-                isLoading={discovery.isLoading}
-                variant="desktop"
-              />
-            </div>
-          </div>
-        ) : (
-          // 有设备或服务已启动后显示完整界面
-          <>
-            {/* 顶部：服务状态卡片 */}
-            <ServiceStatusCard
-              isDiscovering={discovery.isDiscovering}
-              deviceId={discovery.deviceId}
-              localIp={discovery.localIp}
-              onStart={discovery.startDiscovery}
-              onStop={discovery.stopDiscovery}
-              isLoading={discovery.isLoading}
-            />
+    <Layout
+      isDiscovering={discovery.isDiscovering}
+      localIp={discovery.localIp}
+      defaultPort={DEFAULT_PORT}
+      onStartDiscovery={discovery.startDiscovery}
+      onStopDiscovery={discovery.stopDiscovery}
+      isLoading={discovery.isLoading}
+    >
+      {renderPageContent()}
 
-            {/* 中间：设备列表区域（有设备时显示） */}
-            {hasDevices && (
-              <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    <span className="text-2xl">📱</span>
-                    设备列表
-                    <span className="ml-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                      {discovery.devices.length}
-                    </span>
-                  </h2>
-                  <button
-                    onClick={openAddDeviceDialog}
-                    className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg font-medium shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 flex items-center justify-center"
-                    aria-label="添加设备"
-                    title="添加设备"
-                  >
-                    <Plus className="w-5 h-5" aria-hidden="true" />
-                  </button>
-                </div>
-                <div className="grid gap-3">
-                  {discovery.devices.map((device: DeviceInfo) => (
-                    <DeviceCard
-                      key={device.id}
-                      device={device}
-                      onTestConnection={handleTestConnection}
-                      onSendFile={handleSendFile}
-                      onOpenWorkspace={handleOpenWorkspace}
-                      onEdit={handleEditDevice}
-                      onDelete={handleDeleteDevice}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 无设备但服务已启动时，显示提示信息 */}
-            {!hasDevices && discovery.isDiscovering && (
-              <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    <span className="text-2xl">📱</span>
-                    设备列表
-                    <span className="ml-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                      0
-                    </span>
-                  </h2>
-                  <button
-                    onClick={openAddDeviceDialog}
-                    className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg font-medium shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 flex items-center justify-center"
-                    aria-label="添加设备"
-                    title="添加设备"
-                  >
-                    <Plus className="w-5 h-5" aria-hidden="true" />
-                  </button>
-                </div>
-                <div className="text-center py-8">
-                  <p className="text-gray-500 text-base mb-4">
-                    服务已启动，等待设备连接或添加设备
-                  </p>
-                  <button
-                    onClick={openAddDeviceDialog}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg hover:from-blue-600 hover:to-indigo-700 transform hover:scale-105 transition-all duration-200 flex items-center gap-2 mx-auto"
-                  >
-                    <Plus className="w-5 h-5" aria-hidden="true" />
-                    添加设备
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* 底部：接收的文件区域（服务已启动时显示） */}
-            {discovery.isDiscovering && (
-              <ReceivedFilesCard
-                receivedFiles={fileTransfer.receivedFiles}
-                onSave={fileTransfer.saveReceivedFile}
-                onDelete={fileTransfer.removeReceivedFile}
-                onShowDetails={(file) => {
-                  setSelectedFile(file);
-                  setShowFileDetailsDialog(true);
-                }}
-              />
-            )}
-          </>
-        )}
-      </div>
+      {/* 工作台（模态窗口） */}
+      {workspaceDevice && (
+        <Workspace
+          device={workspaceDevice}
+          onClose={handleCloseWorkspace}
+          onQuickTransfer={handleSendFile}
+        />
+      )}
 
       {/* 添加设备对话框 */}
       <AddDeviceDialog
@@ -411,12 +359,11 @@ function App() {
           setShowFileDetailsDialog(false);
           setSelectedFile(null);
         }}
-        variant="desktop"
       />
 
       {/* 开发工具 */}
       <DevTools variant="desktop" />
-    </div>
+    </Layout>
   );
 }
 
