@@ -1,11 +1,15 @@
 // 主布局组件 - 包含侧边栏和顶部栏
 import { Outlet } from "react-router-dom";
 import { DEFAULT_PORT } from "../constants";
+import { useDiscoverySync } from "../hooks/useDiscoverySync";
 import { useDiscoveryStore } from "../stores/discoveryStore";
 import { Sidebar } from "./Sidebar";
 import { TopHeader } from "./TopHeader";
 
 export function MainLayout() {
+  // 同步设备发现状态（定期刷新设备列表，更新设备信息）
+  useDiscoverySync();
+
   // 从 store 获取数据
   const { isDiscovering, localIp, isLoading, startDiscovery, stopDiscovery } =
     useDiscoveryStore();

@@ -1,30 +1,17 @@
-// UI 全局状态管理（对话框、工作台等）
-import type { ReceivedFile } from "stationuli-common/types";
+// UI 全局状态管理（布局相关）
 import { create } from "zustand";
-import type { DeviceInfo } from "../types";
 
 interface UiState {
-  // 工作台
-  workspaceDevice: DeviceInfo | null;
-  setWorkspaceDevice: (device: DeviceInfo | null) => void;
-
-  // 文件详情对话框
-  showFileDetailsDialog: boolean;
-  selectedFile: ReceivedFile | null;
-  openFileDetailsDialog: (file: ReceivedFile) => void;
-  closeFileDetailsDialog: () => void;
+  // 布局相关
+  sidebarCollapsed: boolean; // 侧边栏是否折叠
+  setSidebarCollapsed: (collapsed: boolean) => void;
+  toggleSidebar: () => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
-  // 工作台
-  workspaceDevice: null,
-  setWorkspaceDevice: (device) => set({ workspaceDevice: device }),
-
-  // 文件详情对话框
-  showFileDetailsDialog: false,
-  selectedFile: null,
-  openFileDetailsDialog: (file) =>
-    set({ showFileDetailsDialog: true, selectedFile: file }),
-  closeFileDetailsDialog: () =>
-    set({ showFileDetailsDialog: false, selectedFile: null }),
+  // 布局相关
+  sidebarCollapsed: false,
+  setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
+  toggleSidebar: () =>
+    set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 }));

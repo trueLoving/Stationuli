@@ -4,9 +4,9 @@ import { useState } from "react";
 import { DeviceCard } from "stationuli-common/components";
 import { selectFile } from "../api/file";
 import { AddDeviceDialog } from "../components/AddDeviceDialog";
+import { Workspace } from "../components/Workspace";
 import { useDiscoveryStore } from "../stores/discoveryStore";
 import { useFileTransferStore } from "../stores/fileTransferStore";
-import { useUiStore } from "../stores/uiStore";
 import type { DeviceInfo } from "../types";
 
 export function DevicesPage() {
@@ -20,7 +20,11 @@ export function DevicesPage() {
     testConnection,
   } = useDiscoveryStore();
   const { sendFile } = useFileTransferStore();
-  const { setWorkspaceDevice } = useUiStore();
+
+  // 工作台状态（页面级）
+  const [workspaceDevice, setWorkspaceDevice] = useState<DeviceInfo | null>(
+    null
+  );
 
   // 页面级状态
   const [searchQuery, setSearchQuery] = useState("");
@@ -198,6 +202,11 @@ export function DevicesPage() {
   // 打开工作台
   const handleOpenWorkspace = (device: DeviceInfo) => {
     setWorkspaceDevice(device);
+  };
+
+  // 关闭工作台
+  const handleCloseWorkspace = () => {
+    setWorkspaceDevice(null);
   };
 
   // 编辑设备
@@ -463,6 +472,11 @@ export function DevicesPage() {
         onClose={closeAddDeviceDialog}
         onAdd={handleAddDevice}
       />
+
+      {/* 工作台（模态窗口） */}
+      {workspaceDevice && (
+        <Workspace device={workspaceDevice} onClose={handleCloseWorkspace} />
+      )}
     </div>
   );
 }

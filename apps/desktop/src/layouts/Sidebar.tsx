@@ -9,7 +9,7 @@ import {
   Smartphone,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { useAppStore } from "../stores/appStore";
+import { useUiStore } from "../stores/uiStore";
 
 interface NavItem {
   id: string;
@@ -47,8 +47,8 @@ const navItems: NavItem[] = [
 
 export function Sidebar() {
   const location = useLocation();
-  const sidebarCollapsed = useAppStore((state) => state.sidebarCollapsed);
-  const toggleSidebar = useAppStore((state) => state.toggleSidebar);
+  const sidebarCollapsed = useUiStore((state) => state.sidebarCollapsed);
+  const toggleSidebar = useUiStore((state) => state.toggleSidebar);
 
   return (
     <div
