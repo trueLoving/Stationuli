@@ -14,7 +14,7 @@ interface AddDeviceDialogProps {
   onPortChange: (port: string) => void;
   onNameChange: (name: string) => void;
   onTypeChange: (type: string) => void;
-  onIdChange: (id: string) => void;
+  onIdChange?: (id: string) => void; // 可选，目前未使用
   onClose: () => void;
   onAdd: () => void;
   variant?: "mobile" | "desktop";
@@ -31,7 +31,7 @@ export function AddDeviceDialog({
   onPortChange,
   onNameChange,
   onTypeChange,
-  onIdChange,
+  onIdChange: _onIdChange,
   onClose,
   onAdd,
   variant = "mobile",

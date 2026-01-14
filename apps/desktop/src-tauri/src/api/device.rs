@@ -437,19 +437,17 @@ pub async fn get_local_ip(state: State<'_, AppState>) -> Result<String, String> 
 pub async fn test_connection(
   target_address: String,
   target_port: u16,
-  state: State<'_, AppState>,
-  app: AppHandle,
+  _state: State<'_, AppState>,
+  _app: AppHandle,
 ) -> Result<String, String> {
   use stationuli_core::p2p::tcp::TcpConnection;
-  use tokio::time::{Duration, Instant, timeout};
+  use tokio::time::{Duration, timeout};
   use tracing::info;
 
   info!(
     "[DESKTOP] Testing connection to {}:{}",
     target_address, target_port
   );
-
-  let start_time = Instant::now();
 
   // 尝试连接，设置5秒超时
   let result = timeout(

@@ -1,7 +1,7 @@
 // 文件相关 API 命令 - 对应前端 src/api/file.ts
 
 use crate::state::AppState;
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Emitter, State};
 
 /// 发送文件
 #[tauri::command]
@@ -12,17 +12,6 @@ pub async fn send_file(
   state: State<'_, AppState>,
   app: AppHandle,
 ) -> Result<String, String> {
-  use tokio::time::Instant;
-  use tracing::info;
-
-  // 获取文件大小
-  let file_size = tokio::fs::metadata(&file_path)
-    .await
-    .map_err(|e| format!("Failed to get file metadata: {}", e))?
-    .len();
-
-  let start_time = Instant::now();
-
   let transfer = state.inner().file_transfer.read().await;
   let app_clone = app.clone();
   let file_path_clone = file_path.clone();

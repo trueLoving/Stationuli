@@ -1,22 +1,48 @@
 // 工作台组件（设备中心的多功能界面）
 import { X, FileText, Monitor, MessageSquare, Share2 } from "lucide-react";
 import { useState } from "react";
+import { selectFile } from "../api/file";
+import { useFileTransferStore } from "../stores/fileTransferStore";
 import type { DeviceInfo } from "../types";
 
 interface WorkspaceProps {
   device: DeviceInfo;
   onClose: () => void;
-  onQuickTransfer?: (device: DeviceInfo) => void;
 }
 
 type WorkspaceTab = "transfer" | "control" | "message" | "screen";
 
-export function Workspace({
-  device,
-  onClose,
-  onQuickTransfer,
-}: WorkspaceProps) {
+export function Workspace({ device, onClose }: WorkspaceProps) {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("transfer");
+  const { sendFile } = useFileTransferStore();
+
+  // 快速发送文件
+  const handleQuickTransfer = async () => {
+    try {
+      const selected = await selectFile(true);
+      if (!selected) {
+        return; // 用户取消选择
+      }
+
+      const filePaths = Array.isArray(selected) ? selected : [selected];
+      if (filePaths.length === 0) {
+        return;
+      }
+
+      // 逐个发送文件
+      for (const filePath of filePaths) {
+        try {
+          await sendFile(device.address, device.port, filePath);
+        } catch (error) {
+          console.error(`发送文件失败: ${filePath}`, error);
+          alert(`❌ 文件发送失败: ${filePath}\n${error}`);
+        }
+      }
+    } catch (error) {
+      console.error("文件选择失败:", error);
+      alert(`❌ 文件选择失败: ${error}`);
+    }
+  };
 
   const tabs: Array<{
     id: WorkspaceTab;
@@ -105,14 +131,12 @@ export function Workspace({
                 文件传输
               </div>
               <div className="text-sm text-gray-500">文件传输功能开发中...</div>
-              {onQuickTransfer && (
-                <button
-                  onClick={() => onQuickTransfer(device)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  快速发送文件
-                </button>
-              )}
+              <button
+                onClick={handleQuickTransfer}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                快速发送文件
+              </button>
             </div>
           )}
 

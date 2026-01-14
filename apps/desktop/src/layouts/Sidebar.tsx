@@ -1,20 +1,21 @@
 // 左侧边栏导航组件
 import {
+  Activity,
   ChevronLeft,
   ChevronRight,
-  Home,
-  Smartphone,
   History,
+  Home,
   Settings,
-  Activity,
+  Smartphone,
 } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import { useAppStore } from "../stores/appStore";
 
 interface NavItem {
   id: string;
   label: string;
   icon: React.ReactNode;
-  page: "home" | "devices" | "history" | "settings";
+  path: string;
 }
 
 const navItems: NavItem[] = [
@@ -22,31 +23,30 @@ const navItems: NavItem[] = [
     id: "home",
     label: "首页",
     icon: <Home className="w-5 h-5" />,
-    page: "home",
+    path: "/home",
   },
   {
     id: "devices",
     label: "设备",
     icon: <Smartphone className="w-5 h-5" />,
-    page: "devices",
+    path: "/devices",
   },
   {
     id: "history",
     label: "历史",
     icon: <History className="w-5 h-5" />,
-    page: "history",
+    path: "/history",
   },
   {
     id: "settings",
     label: "设置",
     icon: <Settings className="w-5 h-5" />,
-    page: "settings",
+    path: "/settings",
   },
 ];
 
 export function Sidebar() {
-  const currentPage = useAppStore((state) => state.currentPage);
-  const setCurrentPage = useAppStore((state) => state.setCurrentPage);
+  const location = useLocation();
   const sidebarCollapsed = useAppStore((state) => state.sidebarCollapsed);
   const toggleSidebar = useAppStore((state) => state.toggleSidebar);
 
@@ -94,21 +94,20 @@ export function Sidebar() {
       {/* 导航菜单 */}
       <nav className="flex-1 py-4">
         {navItems.map((item) => {
-          const isActive = currentPage === item.page;
+          const isActive = location.pathname === item.path;
           const isDisabled =
-            item.page === "history" || item.page === "settings";
+            item.path === "/history" || item.path === "/settings";
           return (
-            <button
+            <Link
               key={item.id}
-              onClick={() => !isDisabled && setCurrentPage(item.page)}
-              disabled={isDisabled}
+              to={item.path}
               className={`w-full flex items-center gap-3 py-3 transition-colors ${
                 sidebarCollapsed ? "justify-center px-0" : "px-4 text-left"
               } ${
                 isActive
                   ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
                   : isDisabled
-                    ? "text-gray-400 cursor-not-allowed opacity-50"
+                    ? "text-gray-400 cursor-not-allowed opacity-50 pointer-events-none"
                     : "text-gray-700 hover:bg-gray-50"
               }`}
               title={sidebarCollapsed ? item.label : undefined}
@@ -127,7 +126,7 @@ export function Sidebar() {
               {!sidebarCollapsed && (
                 <span className="font-medium">{item.label}</span>
               )}
-            </button>
+            </Link>
           );
         })}
       </nav>

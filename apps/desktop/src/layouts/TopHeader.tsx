@@ -1,14 +1,14 @@
 // 顶部标题栏组件
 import { Copy, Play, Square } from "lucide-react";
 import { useState } from "react";
-import { useAppStore } from "../stores/appStore";
+import { useLocation } from "react-router-dom";
 import { Spinner } from "stationuli-common/components";
 
 const pageTitles: Record<string, string> = {
-  home: "首页",
-  devices: "设备",
-  history: "历史",
-  settings: "设置",
+  "/home": "首页",
+  "/devices": "设备",
+  "/history": "历史",
+  "/settings": "设置",
 };
 
 interface TopHeaderProps {
@@ -28,7 +28,7 @@ export function TopHeader({
   onStop,
   isLoading = false,
 }: TopHeaderProps) {
-  const currentPage = useAppStore((state) => state.currentPage);
+  const location = useLocation();
   const [copiedIp, setCopiedIp] = useState(false);
 
   const handleCopyIp = async () => {
@@ -47,7 +47,7 @@ export function TopHeader({
       {/* 左侧：页面标题 */}
       <div className="flex items-center gap-4">
         <span className="text-lg font-semibold text-gray-800">
-          {pageTitles[currentPage] || "首页"}
+          {pageTitles[location.pathname] || "首页"}
         </span>
       </div>
 

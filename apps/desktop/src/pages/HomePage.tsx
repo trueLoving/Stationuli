@@ -1,34 +1,24 @@
 // 首页组件（不包含设备相关操作）
 import { ReceivedFilesCard } from "stationuli-common/components";
-import type { ReceivedFile } from "stationuli-common/types";
+import { useDiscoveryStore } from "../stores/discoveryStore";
+import { useFileTransferStore } from "../stores/fileTransferStore";
+import { useUiStore } from "../stores/uiStore";
 
-interface HomePageProps {
-  // 服务状态（用于判断是否显示接收文件）
-  isDiscovering: boolean;
-
-  // 接收文件
-  receivedFiles: ReceivedFile[];
-  onSaveFile: (file: ReceivedFile) => void;
-  onDeleteFile: (file: ReceivedFile) => void;
-  onShowFileDetails: (file: ReceivedFile) => void;
-}
-
-export function HomePage({
-  isDiscovering,
-  receivedFiles,
-  onSaveFile,
-  onDeleteFile,
-  onShowFileDetails,
-}: HomePageProps) {
+export function HomePage() {
+  // 从 store 获取数据
+  const { isDiscovering } = useDiscoveryStore();
+  const { receivedFiles, saveReceivedFile, removeReceivedFile } =
+    useFileTransferStore();
+  const { openFileDetailsDialog } = useUiStore();
   return (
     <div className="space-y-4">
       {/* 接收文件卡片（仅在服务启动时显示） */}
       {isDiscovering ? (
         <ReceivedFilesCard
           receivedFiles={receivedFiles}
-          onSave={onSaveFile}
-          onDelete={onDeleteFile}
-          onShowDetails={onShowFileDetails}
+          onSave={saveReceivedFile}
+          onDelete={removeReceivedFile}
+          onShowDetails={openFileDetailsDialog}
           variant="desktop"
         />
       ) : (
