@@ -434,9 +434,14 @@ pub async fn get_local_ip(state: State<'_, AppState>) -> Result<String, String> 
 
 /// 测试与目标设备的连接
 #[tauri::command]
-pub async fn test_connection(target_address: String, target_port: u16) -> Result<String, String> {
+pub async fn test_connection(
+  target_address: String,
+  target_port: u16,
+  state: State<'_, AppState>,
+  app: AppHandle,
+) -> Result<String, String> {
   use stationuli_core::p2p::tcp::TcpConnection;
-  use tokio::time::{Duration, timeout};
+  use tokio::time::{Duration, Instant, timeout};
   use tracing::info;
 
   info!(
@@ -444,15 +449,17 @@ pub async fn test_connection(target_address: String, target_port: u16) -> Result
     target_address, target_port
   );
 
+  let start_time = Instant::now();
+
   // 尝试连接，设置5秒超时
-  match timeout(
+  let result = timeout(
     Duration::from_secs(5),
     TcpConnection::connect(&target_address, target_port),
   )
-  .await
-  {
+  .await;
+
+  match result {
     Ok(Ok(mut conn)) => {
-      // 连接成功，立即关闭
       conn.close().ok();
       let msg = format!("连接成功: {}:{}", target_address, target_port);
       info!("[DESKTOP] {}", msg);
@@ -464,7 +471,7 @@ pub async fn test_connection(target_address: String, target_port: u16) -> Result
         "[DESKTOP] {} to {}:{}",
         err_msg, target_address, target_port
       );
-      Err(err_msg)
+      Err(format!("连接失败: {}:{}", target_address, target_port))
     }
     Err(_) => {
       let err_msg = "连接超时（5秒）".to_string();
@@ -472,7 +479,7 @@ pub async fn test_connection(target_address: String, target_port: u16) -> Result
         "[DESKTOP] {} to {}:{}",
         err_msg, target_address, target_port
       );
-      Err(err_msg)
+      Err(format!("连接失败: {}:{}", target_address, target_port))
     }
   }
 }

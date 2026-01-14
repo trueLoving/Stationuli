@@ -23,7 +23,9 @@ pub fn run() {
     .plugin(tauri_plugin_dialog::init())
     .setup(|app| {
       // 初始化状态
-      app.manage(AppState::new());
+      let app_state = AppState::new();
+
+      app.manage(app_state);
 
       // 初始化自定义日志层，将日志发送到前端
       init_logging_to_ui(app.handle(), "desktop")?;
