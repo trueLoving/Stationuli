@@ -1,5 +1,3 @@
-English | [中文](./README.zh-CN.md)
-
 # Stationuli —— Personal Workstation P2P File Transfer & Control Solution
 
 [![License: BSL 1.1](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](https://mariadb.com/bsl11/)
@@ -61,7 +59,6 @@ Pure P2P cross-platform file transfer and control tool:
 We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) to get started.
 
 - [Contributing Guide (English)](CONTRIBUTING.md)
-- [贡献指南 (中文)](CONTRIBUTING.zh-CN.md)
 
 ## 📄 License
 
