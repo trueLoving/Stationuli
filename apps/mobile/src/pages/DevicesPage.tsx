@@ -3,47 +3,215 @@ import { ChevronDown, Plus, Search } from "lucide-react";
 import { useState } from "react";
 import { DeviceCard } from "stationuli-common/components";
 import type { DeviceInfo } from "../types";
+import { selectFile } from "../api/file";
+import { AddDeviceDialog } from "../components/AddDeviceDialog";
+import { useDiscoveryStore } from "../stores/discoveryStore";
+import { useFileTransferStore } from "../stores/fileTransferStore";
 
-interface DevicesPageProps {
-  // 设备列表
-  devices: DeviceInfo[];
-  onAddDevice: () => void;
-  onTestConnection: (device: DeviceInfo) => void;
-  onSendFile: (device: DeviceInfo) => void;
-  onOpenWorkspace: (device: DeviceInfo) => void;
-  onEditDevice: (device: DeviceInfo) => void;
-  onDeleteDevice: (device: DeviceInfo) => void;
-  // 服务状态（用于判断是否显示空状态）
-  isDiscovering: boolean;
-}
+export function DevicesPage() {
+  // 从 store 获取数据
+  const {
+    devices,
+    isDiscovering,
+    addDevice,
+    removeDevice,
+    updateDevice,
+    testConnection,
+  } = useDiscoveryStore();
+  const { sendFile } = useFileTransferStore();
 
-export function DevicesPage({
-  devices,
-  onAddDevice,
-  onTestConnection,
-  onSendFile,
-  onOpenWorkspace,
-  onEditDevice,
-  onDeleteDevice,
-  isDiscovering,
-}: DevicesPageProps) {
+  // 页面级状态
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<
     "all" | "online" | "offline"
   >("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // 判断设备是否在线（基于 connected 和 lastSeen）
-  const isDeviceOnline = (
-    device: DeviceInfo & { connected?: boolean; lastSeen?: number }
-  ) => {
-    if (device.connected) return true;
-    // 如果 lastSeen 在 30 秒内，认为设备在线
-    if (device.lastSeen) {
-      const now = Date.now();
-      const timeDiff = now - device.lastSeen;
-      return timeDiff < 30000; // 30秒
+  // 设备对话框状态
+  const [showAddDeviceDialog, setShowAddDeviceDialog] = useState(false);
+  const [deviceAddress, setDeviceAddress] = useState<string>("");
+  const [devicePort, setDevicePort] = useState<string>("8080");
+  const [deviceName, setDeviceName] = useState<string>("");
+  const [deviceType, setDeviceType] = useState<string>("unknown");
+  const [deviceId, setDeviceId] = useState<string>("");
+
+  // 打开添加设备对话框
+  const openAddDeviceDialog = () => {
+    setDeviceAddress("");
+    setDevicePort("8080");
+    setDeviceName("");
+    setDeviceType("unknown");
+    setDeviceId("");
+    setShowAddDeviceDialog(true);
+  };
+
+  // 关闭添加设备对话框
+  const closeAddDeviceDialog = () => {
+    setShowAddDeviceDialog(false);
+    setDeviceAddress("");
+    setDevicePort("8080");
+    setDeviceName("");
+    setDeviceType("unknown");
+    setDeviceId("");
+  };
+
+  // 添加设备
+  const handleAddDevice = async () => {
+    // 如果是编辑模式（有 deviceId），则更新设备
+    if (deviceId) {
+      await handleUpdateDevice();
+      return;
     }
+    const address = deviceAddress.trim();
+    if (!address) {
+      alert("请输入设备 IP 地址和端口\n格式：192.168.1.100:8080");
+      return;
+    }
+
+    const port = parseInt(devicePort, 10);
+    if (isNaN(port) || port <= 0 || port > 65535) {
+      alert("端口号无效，请输入 1-65535 之间的数字\n格式：192.168.1.100:8080");
+      return;
+    }
+
+    try {
+      await addDevice(
+        address,
+        port,
+        deviceName.trim() || undefined,
+        deviceType !== "unknown" ? deviceType : undefined,
+        deviceId.trim() || undefined
+      );
+      closeAddDeviceDialog();
+
+      // 添加后自动测试连接
+      try {
+        const result = await testConnection(address, port);
+        alert(`✅ 设备添加成功！\n${result}`);
+      } catch (error) {
+        const errorMsg = String(error);
+        alert(
+          `⚠️ 设备已添加，但连接测试失败：\n${errorMsg}\n\n请检查：\n1. 目标设备是否已启动服务\n2. IP地址和端口是否正确\n3. 网络是否连通`
+        );
+      }
+    } catch (error) {
+      const errorMsg = String(error);
+      alert(`❌ 添加设备失败: ${errorMsg}\n\n请检查控制台获取更多信息。`);
+    }
+  };
+
+  // 测试连接
+  const handleTestConnection = async (device: DeviceInfo) => {
+    try {
+      const result = await testConnection(device.address, device.port);
+      alert(`✅ ${result}`);
+    } catch (error) {
+      const errorMsg = String(error);
+      if (errorMsg.includes("Connection refused")) {
+        alert(
+          `❌ 连接测试失败: 连接被拒绝\n\n可能的原因：\n1. 桌面端未启动设备发现\n2. IP地址不正确\n3. 端口不匹配\n\n设备信息：\n名称: ${device.name}\n地址: ${device.address}\n端口: ${device.port}\n类型: ${device.device_type}`
+        );
+      } else {
+        alert(`❌ 连接测试失败: ${error}`);
+      }
+    }
+  };
+
+  // 发送文件（支持多选）
+  const handleSendFile = async (device: DeviceInfo) => {
+    try {
+      const selected = await selectFile(true);
+
+      if (!selected) {
+        return; // 用户取消选择
+      }
+
+      const filePaths: string[] = Array.isArray(selected)
+        ? selected
+        : [selected];
+
+      if (filePaths.length === 0) {
+        return;
+      }
+
+      // 逐个发送文件
+      for (const filePath of filePaths) {
+        try {
+          await sendFile(device.address, device.port, filePath);
+        } catch (error) {
+          console.error(`发送文件失败: ${filePath}`, error);
+          alert(`❌ 文件发送失败: ${filePath}\n${error}`);
+        }
+      }
+    } catch (error) {
+      console.error("文件选择失败:", error);
+      alert(`❌ 文件选择失败: ${error}`);
+    }
+  };
+
+  // 打开工作台（占位）
+  const handleOpenWorkspace = (device: DeviceInfo) => {
+    alert(
+      `工作台功能开发中...\n设备: ${device.name}\n地址: ${device.address}:${device.port}`
+    );
+  };
+
+  // 编辑设备
+  const handleEditDevice = (device: DeviceInfo) => {
+    setDeviceAddress(device.address ?? "");
+    setDevicePort(device.port.toString());
+    setDeviceName(device.name ?? "");
+    setDeviceType(device.device_type ?? "unknown");
+    setDeviceId(device.id);
+    setShowAddDeviceDialog(true);
+  };
+
+  // 删除设备
+  const handleDeleteDevice = async (device: DeviceInfo) => {
+    try {
+      await removeDevice(device.id);
+      alert(`✅ 设备 "${device.name}" 已删除`);
+    } catch (error) {
+      console.error("Failed to delete device:", error);
+      alert(`❌ 删除设备失败: ${error}`);
+    }
+  };
+
+  // 更新设备（编辑后保存）
+  const handleUpdateDevice = async () => {
+    const address = deviceAddress.trim();
+    if (!address) {
+      alert("请输入设备 IP 地址和端口\n格式：192.168.1.100:8080");
+      return;
+    }
+
+    const port = parseInt(devicePort, 10);
+    if (isNaN(port) || port <= 0 || port > 65535) {
+      alert("端口号无效，请输入 1-65535 之间的数字\n格式：192.168.1.100:8080");
+      return;
+    }
+
+    try {
+      const updatedDevice: DeviceInfo = {
+        id: deviceId,
+        name: deviceName.trim() || `手动添加的设备 (${address}:${port})`,
+        address,
+        port,
+        device_type: deviceType !== "unknown" ? deviceType : "unknown",
+      };
+      await updateDevice(updatedDevice);
+      closeAddDeviceDialog();
+      alert(`✅ 设备已更新！`);
+    } catch (error) {
+      const errorMsg = String(error);
+      alert(`❌ 更新设备失败: ${errorMsg}`);
+    }
+  };
+
+  // 判断设备是否在线（简化版，移动端可能没有 connected 和 lastSeen）
+  const isDeviceOnline = (_device: DeviceInfo) => {
+    // 移动端暂时无法判断设备在线状态，返回 false
+    // 未来可以通过定期 ping 来判断
     return false;
   };
 
@@ -103,7 +271,7 @@ export function DevicesPage({
           </div>
           {isDiscovering && (
             <button
-              onClick={onAddDevice}
+              onClick={openAddDeviceDialog}
               className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg text-sm font-medium shadow-sm active:scale-95 transition-all duration-200 flex items-center justify-center"
               aria-label="添加设备"
             >
@@ -230,11 +398,11 @@ export function DevicesPage({
             <DeviceCard
               key={device.id}
               device={device}
-              onTestConnection={onTestConnection}
-              onSendFile={onSendFile}
-              onOpenWorkspace={onOpenWorkspace}
-              onEdit={onEditDevice}
-              onDelete={onDeleteDevice}
+              onTestConnection={handleTestConnection}
+              onSendFile={handleSendFile}
+              onOpenWorkspace={handleOpenWorkspace}
+              onEdit={handleEditDevice}
+              onDelete={handleDeleteDevice}
               variant="mobile"
             />
           ))}
@@ -264,6 +432,23 @@ export function DevicesPage({
           </div>
         </div>
       )}
+
+      {/* 添加设备对话框 */}
+      <AddDeviceDialog
+        isOpen={showAddDeviceDialog}
+        deviceAddress={deviceAddress}
+        devicePort={devicePort}
+        deviceName={deviceName}
+        deviceType={deviceType}
+        deviceId={deviceId}
+        onAddressChange={setDeviceAddress}
+        onPortChange={setDevicePort}
+        onNameChange={setDeviceName}
+        onTypeChange={setDeviceType}
+        onIdChange={setDeviceId}
+        onClose={closeAddDeviceDialog}
+        onAdd={handleAddDevice}
+      />
     </div>
   );
 }

@@ -1,14 +1,14 @@
 // 移动端顶部标题栏组件
 import { Copy, Play, Square } from "lucide-react";
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Spinner } from "stationuli-common/components";
-import { useAppStore } from "../stores/appStore";
 
 const pageTitles: Record<string, string> = {
-  home: "首页",
-  devices: "设备",
-  history: "历史",
-  settings: "设置",
+  "/home": "首页",
+  "/devices": "设备",
+  "/history": "历史",
+  "/settings": "设置",
 };
 
 interface MobileHeaderProps {
@@ -28,8 +28,11 @@ export function MobileHeader({
   onStop,
   isLoading = false,
 }: MobileHeaderProps) {
-  const currentPage = useAppStore((state) => state.currentPage);
+  const location = useLocation();
   const [copiedIp, setCopiedIp] = useState(false);
+
+  const currentPath = location.pathname;
+  const pageTitle = pageTitles[currentPath] || "首页";
 
   const handleCopyIp = async () => {
     const textToCopy = `${localIp}:${defaultPort}`;
@@ -47,9 +50,7 @@ export function MobileHeader({
       {/* 页面标题和启动按钮（服务未启动时） */}
       {!isDiscovering ? (
         <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-gray-800">
-            {pageTitles[currentPage] || "首页"}
-          </h1>
+          <h1 className="text-lg font-semibold text-gray-800">{pageTitle}</h1>
           <button
             onClick={onStart}
             disabled={isLoading}
@@ -76,7 +77,7 @@ export function MobileHeader({
         /* 服务启动后：标题、IP地址和停止按钮在同一行 */
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-lg font-semibold text-gray-800 flex-shrink-0">
-            {pageTitles[currentPage] || "首页"}
+            {pageTitle}
           </h1>
           <div className="flex items-center gap-2 flex-shrink-0">
             {localIp && (

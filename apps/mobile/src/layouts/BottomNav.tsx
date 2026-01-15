@@ -1,12 +1,12 @@
 // 底部导航栏组件
-import { Home, History, Settings, Smartphone } from "lucide-react";
-import { useAppStore } from "../stores/appStore";
+import { History, Home, Settings, Smartphone } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
 interface NavItem {
   id: string;
   label: string;
   icon: React.ReactNode;
-  page: "home" | "devices" | "history" | "settings";
+  path: string;
 }
 
 const navItems: NavItem[] = [
@@ -14,49 +14,52 @@ const navItems: NavItem[] = [
     id: "home",
     label: "首页",
     icon: <Home className="w-5 h-5" />,
-    page: "home",
+    path: "/home",
   },
   {
     id: "devices",
     label: "设备",
     icon: <Smartphone className="w-5 h-5" />,
-    page: "devices",
+    path: "/devices",
   },
   {
     id: "history",
     label: "历史",
     icon: <History className="w-5 h-5" />,
-    page: "history",
+    path: "/history",
   },
   {
     id: "settings",
     label: "设置",
     icon: <Settings className="w-5 h-5" />,
-    page: "settings",
+    path: "/settings",
   },
 ];
 
 export function BottomNav() {
-  const currentPage = useAppStore((state) => state.currentPage);
-  const setCurrentPage = useAppStore((state) => state.setCurrentPage);
+  const location = useLocation();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 bottom-nav-safe z-50">
       <div className="flex items-center justify-around h-16 px-2 pb-safe-bottom">
         {navItems.map((item) => {
-          const isActive = currentPage === item.page;
+          const isActive = location.pathname === item.path;
           const isDisabled =
-            item.page === "history" || item.page === "settings";
+            item.path === "/history" || item.path === "/settings";
           return (
-            <button
+            <Link
               key={item.id}
-              onClick={() => !isDisabled && setCurrentPage(item.page)}
-              disabled={isDisabled}
+              to={isDisabled ? "#" : item.path}
+              onClick={(e) => {
+                if (isDisabled) {
+                  e.preventDefault();
+                }
+              }}
               className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
                 isActive
                   ? "text-blue-600"
                   : isDisabled
-                    ? "text-gray-400 cursor-not-allowed opacity-50"
+                    ? "text-gray-400 cursor-not-allowed opacity-50 pointer-events-none"
                     : "text-gray-500 active:text-gray-700"
               }`}
               aria-label={item.label}
@@ -83,7 +86,7 @@ export function BottomNav() {
               >
                 {item.label}
               </span>
-            </button>
+            </Link>
           );
         })}
       </div>
