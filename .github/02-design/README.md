@@ -20,5 +20,6 @@
 ## 当前文档列表
 
 - [00-System-Design](./00-System-Design.md) — 整体系统设计
+- [01-cross-platform-file-transfer](./01-cross-platform-file-transfer.md) — 跨端文件传输共享方案设计（设备发现、P2P 文件传输）
 
-本目录已整理，其他历史文件已移除，后续新增或移动设计文档时，请同步更新本 README 的文档列表。
+后续新增或移动设计文档时，请同步更新本 README 的文档列表。
